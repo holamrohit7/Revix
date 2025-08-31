@@ -577,12 +577,12 @@ elif page == "✅ Action Item Tracker":
 
         # Header
         header = st.columns([1, 2, 2, 2, 2, 3, 1])
-        header[0].markdown("🆔 ID**")
-        header[1].markdown("👤 To**")
-        header[2].markdown("📅 Due Date**")
-        header[3].markdown("⭐ Priority**")
-        header[4].markdown("📊 Status**")
-        header[5].markdown("💬 Message**")
+        header[0].markdown("🆔 ID")
+        header[1].markdown("👤 To")
+        header[2].markdown("📅 Due Date")
+        header[3].markdown("⭐ Priority")
+        header[4].markdown("📊 Status")
+        header[5].markdown("💬 Message")
         header[6].markdown("🗑")
 
         for i, act in enumerate(filtered_actions):
