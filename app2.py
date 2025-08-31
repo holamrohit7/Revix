@@ -525,7 +525,7 @@ elif page == "📊 KPI Dashboard":
         to = st.text_input("Assign to (email or name)")
         due = st.date_input("Due Date", min_value=date.today())
         chart_choice = st.selectbox("Select Chart/Gauge", chart_titles)
-        msg = st.text_area("Message", "Please review this KPI and do analysis.")
+        msg = st.text_area("Message", "Hi, Check this data and take necessary action.")
         submitted = st.form_submit_button("✅ Confirm Assign")
 
         if submitted:
