@@ -20,8 +20,10 @@ st.set_page_config(page_title="Revix Chatbot", page_icon="🤖", layout="wide")
 # Sidebar Navigation
 # ------------------------
 st.sidebar.header("⚙ Navigation")
-page = st.sidebar.radio("Go to", ["💬 Chat", "📊 KPI Dashboard", "✅ Action Item Tracker"])
-
+page = st.sidebar.radio(
+    "Go to",
+    ["📊 KPI Dashboard", "💬 Chat", "✅ Action Item Tracker", "🔔 Smart Alerts"]  # 👈 Dashboard comes first now
+)
 # ------------------------
 # Load API Key
 # ------------------------
@@ -35,7 +37,7 @@ client = Groq(api_key=GROQ_API_KEY)
 # ------------------------
 # Load Cached DataFrames
 # ------------------------
-DATA_FOLDER = os.path.join(os.path.dirname(__file__), "excel")
+DATA_FOLDER = os.path.join(os.path.dirname(_file_), "excel")
 DF_FILE = os.path.join(DATA_FOLDER, "dataframes.pkl")
 
 if not os.path.exists(DF_FILE):
@@ -178,91 +180,7 @@ def show_assign_form(answer_text, msg_id, chart_title=None):
             st.success("✅ Action Assigned!")
             st.rerun()
 
-# ------------------------
-# Pages
-# ------------------------
-# if page == "💬 Chat":
-#     st.title("🤖 Agent Revix (Chat Mode)")
-#     show_charts = st.sidebar.checkbox("📊 Show Charts Automatically", value=True)
 
-#     # Render existing messages
-#     for msg in st.session_state.messages:
-#         if msg["role"] == "user":
-#             st.chat_message("user").markdown(msg["content"])
-#         else:
-#             st.chat_message("assistant").markdown(msg["content"])
-
-#             chart_title = None
-#             if "data" in msg:
-#                 components.html(styled_table(msg["data"]), height=400, scrolling=True)
-#             if "chart" in msg:
-#                 st.plotly_chart(msg["chart"], use_container_width=True, key=f"chart_{uuid.uuid4()}")
-#                 chart_title = msg["chart"].layout.title.text if msg["chart"].layout.title.text else "Chart"
-
-#             if "content" in msg:
-#                 show_assign_form(msg["content"], msg_id=msg["id"], chart_title=chart_title)
-
-#     # Input
-#     query = st.chat_input("Ask about your data...")
-
-#     if query:
-#         st.session_state.messages.append({"role": "user", "content": query, "id": str(uuid.uuid4())[:6]})
-#         st.chat_message("user").markdown(query)
-
-#         with st.chat_message("assistant"):
-#             with st.spinner("🤖 Thinking..."):
-#                 if not is_data_related(query):
-#                     ans = "ℹ I only know your Excel/CSV data. No outside knowledge."
-#                     st.markdown(ans)
-#                     st.session_state.messages.append({"role": "assistant", "content": ans, "id": str(uuid.uuid4())[:6]})
-#                     show_assign_form(ans, msg_id=st.session_state.messages[-1]["id"])
-#                 else:
-#                     code = generate_pandas_code(query)
-#                     result = execute_pandas_code(code)
-
-#                     if "Error" in result.columns:
-#                         ans = f"⚠ {result.iloc[0]['Error']}"
-#                         st.markdown(ans)
-#                         st.session_state.messages.append({"role": "assistant", "content": ans, "id": str(uuid.uuid4())[:6]})
-#                         show_assign_form(ans, msg_id=st.session_state.messages[-1]["id"])
-#                     else:
-#                         ans = "Here’s the result"
-#                         st.markdown(ans)
-#                         st.session_state.messages.append({"role": "assistant", "content": ans, "id": str(uuid.uuid4())[:6]})
-#                         msg_id = st.session_state.messages[-1]["id"]
-
-#                         if result.shape == (1, 1):
-#                             col_name = result.columns[0]
-#                             val = result.iloc[0, 0]
-#                             if isinstance(val, (int, float)):
-#                                 val = round(val, 2)
-#                             ans = f"{col_name} = {val}"
-#                             st.markdown(f"{ans}")
-#                             st.session_state.messages[-1]["content"] = ans
-#                             show_assign_form(ans, msg_id)
-#                         else:
-#                             components.html(styled_table(result), height=400, scrolling=True)
-#                             st.session_state.messages[-1]["data"] = result
-#                             if show_charts and len(result) > 1:
-#                                 num_cols = result.select_dtypes(include=["number"])
-#                                 if not num_cols.empty:
-#                                     fig = px.bar(result, x=result.columns[0], y=num_cols.columns[0],
-#                                                  text=num_cols.columns[0],
-#                                                  title=f"{num_cols.columns[0]} by {result.columns[0]}")
-#                                     st.plotly_chart(fig, use_container_width=True, key=f"chart_{uuid.uuid4()}")
-#                                     st.session_state.messages[-1]["chart"] = fig
-#                                     show_assign_form(ans, msg_id, chart_title=fig.layout.title.text)
-#                             else:
-#                                 show_assign_form(ans, msg_id)
-# ------------------------
-# Chat Section
-# ------------------------
-# ------------------------
-# Chat UI
-# ------------------------
-# ------------------------
-# Smart Memory / State Initialization
-# ------------------------
 if "last_result" not in st.session_state:
     st.session_state.last_result = None
 if "messages" not in st.session_state:
@@ -273,6 +191,8 @@ if "assign_open_for" not in st.session_state:
     st.session_state.assign_open_for = None
 if "plotly_dark" not in st.session_state:   # 🔥 FIX HERE
     st.session_state.plotly_dark = True     # default to dark theme
+if "alerts" not in st.session_state:
+    st.session_state.alerts = []   # store active alert rules
 
 if page == "💬 Chat":
     st.title("🤖 Agent Revix (Chat Mode)")
@@ -282,6 +202,7 @@ if page == "💬 Chat":
     # Render past messages
     for msg in st.session_state.messages:
         if msg["role"] == "user":
+            
             st.chat_message("user").markdown(msg["content"])
         else:
             st.chat_message("assistant").markdown(msg["content"])
@@ -302,6 +223,7 @@ if page == "💬 Chat":
                 with st.form(f"assign_form_{msg['id']}", clear_on_submit=True):
                     to = st.text_input("Assign to (email or name)", key=f"to_{msg['id']}")
                     due = st.date_input("Due Date", min_value=date.today(), key=f"due_{msg['id']}")
+                    priority = st.selectbox("Priority", ["Low", "Medium", "High"], index=1, key=f"priority_{msg['id']}")  # ✅ Added
                     msg_text = st.text_area("Message", "Hi, Check this data and take necessary action.", key=f"msg_{msg['id']}")
                     submitted = st.form_submit_button("✅ Confirm Assign")
 
@@ -310,6 +232,7 @@ if page == "💬 Chat":
                             "id": str(uuid.uuid4())[:8],
                             "to": to.strip(),
                             "due": str(due),
+                            "priority": priority,  # ✅ Store priority
                             "msg": msg_text,
                             "answer": msg["content"],
                             "priority": "Medium",
@@ -371,6 +294,8 @@ if page == "💬 Chat":
                             with st.form(f"assign_form_{msg_id}", clear_on_submit=True):
                                 to = st.text_input("Assign to (email or name)", key=f"to_{msg_id}")
                                 due = st.date_input("Due Date", min_value=date.today(), key=f"due_{msg_id}")
+                                priority = st.selectbox("Priority", ["Low", "Medium", "High"], index=1, key=f"priority_{msg['id']}")  # ✅ Added
+
                                 msg_text = st.text_area("Message", "Hi, Check this data and take necessary action.", key=f"msg_{msg_id}")
                                 submitted = st.form_submit_button("✅ Confirm Assign")
 
@@ -379,6 +304,8 @@ if page == "💬 Chat":
                                         "id": str(uuid.uuid4())[:8],
                                         "to": to.strip(),
                                         "due": str(due),
+                                     "priority": priority,  # ✅ Store priority
+
                                         "msg": msg_text,
                                         "answer": ans,
                                         "priority": "Medium",
@@ -421,6 +348,8 @@ if page == "💬 Chat":
                             with st.form(f"assign_form_{msg_id}", clear_on_submit=True):
                                 to = st.text_input("Assign to (email or name)", key=f"to_{msg_id}")
                                 due = st.date_input("Due Date", min_value=date.today(), key=f"due_{msg_id}")
+                                priority = st.selectbox("Priority", ["Low", "Medium", "High"], index=1, key=f"priority_{msg['id']}")  # ✅ Added
+
                                 msg_text = st.text_area("Message", "Hi, Check this data and take necessary action.", key=f"msg_{msg_id}")
                                 submitted = st.form_submit_button("✅ Confirm Assign")
 
@@ -429,6 +358,8 @@ if page == "💬 Chat":
                                         "id": str(uuid.uuid4())[:8],
                                         "to": to.strip(),
                                         "due": str(due),
+                                        "priority": priority,  # ✅ Store priority
+
                                         "msg": msg_text,
                                         "answer": ans,
                                         "priority": "Medium",
@@ -442,19 +373,46 @@ if page == "💬 Chat":
 # ------------------------
 # KPI Dashboard
 # ------------------------
+
+
 elif page == "📊 KPI Dashboard":
     st.title("📊 KPI Dashboard")
 
     # ----- Sample Data -----
+    random.seed(42)
     months = pd.date_range(start="2025-01-01", periods=12, freq="M")
     df_kpi = pd.DataFrame({
         "Month": months.strftime("%b"),
+        "Product": [random.choice(["FNA", "FNB", "FNC"]) for _ in months],
         "Revenue": [random.randint(50000, 150000) for _ in months],
         "Customer Satisfaction": [random.randint(80, 100) for _ in months],
         "Product Uptime": [random.randint(95, 100) for _ in months],
         "Bug Fix Rate": [random.randint(85, 100) for _ in months],
         "Tickets Resolved": [random.randint(50, 200) for _ in months]
     })
+
+    # ===== Filters =====
+    st.subheader("🔎 Filters")
+    col1, col2 = st.columns(2)
+
+    with col1:
+        selected_product = st.selectbox(
+            "Select Product",
+            ["All"] + sorted(df_kpi["Product"].unique().tolist())
+        )
+
+    with col2:
+        selected_month = st.selectbox(
+            "Select Period (Month)",
+            ["All"] + df_kpi["Month"].unique().tolist()
+        )
+
+    # Apply filters
+    df_filtered = df_kpi.copy()
+    if selected_product != "All":
+        df_filtered = df_filtered[df_filtered["Product"] == selected_product]
+    if selected_month != "All":
+        df_filtered = df_filtered[df_filtered["Month"] == selected_month]
 
     # ===== Gauges (2 per row) =====
     st.subheader("📊 KPI Gauges")
@@ -465,7 +423,7 @@ elif page == "📊 KPI Dashboard":
         title = "Customer Satisfaction %"
         fig = go.Figure(go.Indicator(
             mode="gauge+number",
-            value=df_kpi["Customer Satisfaction"].mean(),
+            value=df_filtered["Customer Satisfaction"].mean(),
             title={'text': title},
             gauge={'axis': {'range': [0, 100]}}
         ))
@@ -475,31 +433,29 @@ elif page == "📊 KPI Dashboard":
         title = "Product Uptime %"
         fig = go.Figure(go.Indicator(
             mode="gauge+number",
-            value=df_kpi["Product Uptime"].mean(),
+            value=df_filtered["Product Uptime"].mean(),
             title={'text': title},
             gauge={'axis': {'range': [0, 100]}}
         ))
         st.plotly_chart(fig, use_container_width=True)
         chart_titles.append(title)
 
-
-
     # ===== Charts (2 per row) =====
     st.subheader("📈 KPI Charts")
 
     charts = [
-        ("Monthly Revenue Trend", px.line(df_kpi, x="Month", y="Revenue", markers=True,
+        ("Monthly Revenue Trend", px.line(df_filtered, x="Month", y="Revenue", markers=True,
                                           title="Monthly Revenue Trend")),
-        ("Customer Satisfaction by Month", px.bar(df_kpi, x="Month", y="Customer Satisfaction",
+        ("Customer Satisfaction by Month", px.bar(df_filtered, x="Month", y="Customer Satisfaction",
                                                  text="Customer Satisfaction", title="Customer Satisfaction by Month")),
-        ("Product Uptime Trend", px.line(df_kpi, x="Month", y="Product Uptime", markers=True,
+        ("Product Uptime Trend", px.line(df_filtered, x="Month", y="Product Uptime", markers=True,
                                          title="Product Uptime Trend")),
-        ("Bug Fix Rate by Month", px.bar(df_kpi, x="Month", y="Bug Fix Rate", text="Bug Fix Rate",
+        ("Bug Fix Rate by Month", px.bar(df_filtered, x="Month", y="Bug Fix Rate", text="Bug Fix Rate",
                                          title="Bug Fix Rate by Month")),
-        ("Tickets Resolved Trend", px.line(df_kpi, x="Month", y="Tickets Resolved", markers=True,
+        ("Tickets Resolved Trend", px.line(df_filtered, x="Month", y="Tickets Resolved", markers=True,
                                            title="Tickets Resolved Trend")),
         ("Revenue vs Satisfaction vs Tickets", px.scatter(
-            df_kpi, x="Revenue", y="Customer Satisfaction",
+            df_filtered, x="Revenue", y="Customer Satisfaction",
             size="Tickets Resolved", color="Month",
             title="Revenue vs Satisfaction vs Tickets"
         ))
@@ -518,13 +474,15 @@ elif page == "📊 KPI Dashboard":
                 st.plotly_chart(charts[i + 1][1], use_container_width=True)
 
     # ===== Assign Form (at bottom) =====
+    # ===== Assign Form (at bottom) =====
     st.markdown("---")
     st.subheader("📤 Assign action item")
 
-    with st.form("assign_dashboard_form"):
+    with st.form("assign_dashboard_form", clear_on_submit=True):   # ✅ clears after submit
         to = st.text_input("Assign to (email or name)")
         due = st.date_input("Due Date", min_value=date.today())
         chart_choice = st.selectbox("Select Chart/Gauge", chart_titles)
+        priority = st.selectbox("Priority", ["Low", "Medium", "High"], index=1)  # ✅ new
         msg = st.text_area("Message", "Hi, Check this data and take necessary action.")
         submitted = st.form_submit_button("✅ Confirm Assign")
 
@@ -533,6 +491,7 @@ elif page == "📊 KPI Dashboard":
                 "id": str(uuid.uuid4())[:6],
                 "to": to,
                 "due": str(due),
+                "priority": priority,   # ✅ added
                 "msg": msg,
                 "answer": f"Review Dashboard KPI: {chart_choice}",
                 "chart_title": chart_choice,
@@ -540,6 +499,8 @@ elif page == "📊 KPI Dashboard":
             }
             st.session_state.actions.append(action)
             st.success(f"✅ Assigned: {chart_choice}")
+            st.rerun()   # ✅ refresh to clear
+
 
 
 
@@ -660,3 +621,97 @@ elif page == "✅ Action Item Tracker":
 
     else:
         st.info("No actions match your filters.")
+        
+        
+# ------------------------
+# Smart Alerts
+# ------------------------
+
+elif page == "🔔 Smart Alerts":
+    st.title("🔔 Smart Alerts")
+
+    # Ensure alerts state exists
+    if "alerts" not in st.session_state:
+        st.session_state.alerts = []
+
+    # Handle reset flag BEFORE rendering text input
+    if "reset_alert_input" in st.session_state and st.session_state.reset_alert_input:
+        st.session_state.new_alert_query = ""
+        st.session_state.reset_alert_input = False
+
+    # ------------------------
+    # Step 1: Create New Alert
+    # ------------------------
+    st.subheader("➕ Create a New Alert")
+    query = st.text_input("Define a new alert (natural language):", key="new_alert_query")
+
+    if st.button("🧪 Test Logic") and query:
+        # Generate pandas code from NLP
+        code = generate_pandas_code(query)
+        st.session_state.test_alert = {"query": query, "code": code}
+        result = execute_pandas_code(code)
+
+        if not result.empty:
+            st.warning("⚠ Alert condition triggered on sample data!")
+            components.html(styled_table(result.head(10)), height=400, scrolling=True)
+            st.caption(f"Showing {min(10, len(result))} of {len(result)} rows matched.")
+        else:
+            st.success("✅ No issues found on sample data.")
+
+    # ------------------------
+    # Step 2: Confirm Alert
+    # ------------------------
+    if "test_alert" in st.session_state:
+        st.markdown("### 📧 Configure Notification")
+        with st.form("confirm_alert_form", clear_on_submit=True):
+            emails = st.text_input("Send to (comma separated emails)")
+            message = st.text_area("Custom Message", f"Alert Triggered: {st.session_state.test_alert['query']}")
+            submitted = st.form_submit_button("✅ Confirm & Create Alert")
+
+            if submitted:
+                new_alert = {
+                    "id": str(uuid.uuid4())[:6],
+                    "query": st.session_state.test_alert["query"],
+                    "code": st.session_state.test_alert["code"],
+                    "emails": [e.strip() for e in emails.split(",") if e.strip()],
+                    "message": message
+                }
+                st.session_state.alerts.append(new_alert)
+
+                # 🔥 Reset so input clears for new NLP query
+                del st.session_state.test_alert
+                st.session_state.reset_alert_input = True
+                st.success("✅ Alert created successfully!")
+                st.rerun()
+
+    # ------------------------
+    # Step 3: Manage Active Alerts
+    # ------------------------
+    st.markdown("### 📂 Active Alerts")
+    if not st.session_state.alerts:
+        st.info("No alerts defined yet.")
+    else:
+        for i, alert in enumerate(st.session_state.alerts):
+            with st.expander(f"🔔 {alert['query']}"):
+                st.write(f"*Query:* {alert['query']}")
+                st.write(f"*Recipients:* {', '.join(alert.get('emails', []))}")
+                st.write(f"*Message:* {alert.get('message', '')}")
+
+                cols = st.columns([1,1,1])
+                if cols[0].button("▶ Test Now", key=f"test_{i}"):
+                    result = execute_pandas_code(alert["code"])
+                    if not result.empty:
+                        st.warning("⚠ Alert triggered!")
+                        components.html(styled_table(result.head(10)), height=400, scrolling=True)
+                        st.caption(f"Showing {min(10, len(result))} of {len(result)} rows matched.")
+                    else:
+                        st.success("✅ No issues found.")
+
+                if cols[1].button("✏ Edit", key=f"edit_{i}"):
+                    st.session_state.test_alert = alert
+                    st.session_state.alerts.pop(i)
+                    st.rerun()
+
+                if cols[2].button("❌ Delete", key=f"del_{i}"):
+                    st.session_state.alerts.pop(i)
+                    st.rerun()
