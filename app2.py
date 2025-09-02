@@ -294,7 +294,7 @@ if page == "💬 Chat":
                             with st.form(f"assign_form_{msg_id}", clear_on_submit=True):
                                 to = st.text_input("Assign to (email or name)", key=f"to_{msg_id}")
                                 due = st.date_input("Due Date", min_value=date.today(), key=f"due_{msg_id}")
-                                priority = st.selectbox("Priority", ["Low", "Medium", "High"], index=1, key=f"priority_{msg['id']}")  # ✅ Added
+                                priority = st.selectbox("Priority", ["Low", "Medium", "High"], index=1, key=f"priority_{msg_id}")  # ✅ Added
 
                                 msg_text = st.text_area("Message", "Hi, Check this data and take necessary action.", key=f"msg_{msg_id}")
                                 submitted = st.form_submit_button("✅ Confirm Assign")
@@ -348,7 +348,7 @@ if page == "💬 Chat":
                             with st.form(f"assign_form_{msg_id}", clear_on_submit=True):
                                 to = st.text_input("Assign to (email or name)", key=f"to_{msg_id}")
                                 due = st.date_input("Due Date", min_value=date.today(), key=f"due_{msg_id}")
-                                priority = st.selectbox("Priority", ["Low", "Medium", "High"], index=1, key=f"priority_{msg['id']}")  # ✅ Added
+                                priority = st.selectbox("Priority", ["Low", "Medium", "High"], index=1, key=f"priority_{msg_id}")  # ✅ Added
 
                                 msg_text = st.text_area("Message", "Hi, Check this data and take necessary action.", key=f"msg_{msg_id}")
                                 submitted = st.form_submit_button("✅ Confirm Assign")
