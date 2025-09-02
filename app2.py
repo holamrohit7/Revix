@@ -716,33 +716,41 @@ elif page == "🔔 Smart Alerts":
                     st.session_state.alerts.pop(i)
                     st.rerun()
 # ------------------------
-# Custom Header (Revix Branding)
+# Global Header (Revix Branding)
 # ------------------------
 st.markdown("""
 <style>
 .revix-header {
     text-align: left;
     font-family: 'Segoe UI', Tahoma, sans-serif;
-    padding: 10px 0;
+    padding: 10px 0 15px 0;
+    border-bottom: 1px solid #ccc;
+    margin-bottom: 15px;
 }
+
 .revix-title {
-    font-size: 36px;
+    font-size: 48px; /* Increased size */
     font-weight: 900;
-    color: #0078D4; /* Flexera blue */
+    background: linear-gradient(90deg, #0078D4, #00AEEF); /* Gradient blue */
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
     margin-bottom: -5px;
 }
+
 .revix-subtitle {
-    font-size: 16px;
+    font-size: 18px;
     color: #444;
     font-weight: 500;
 }
+
 .revix-subtitle b {
-    color: #0078D4; /* Bold letters in same Flexera blue */
+    color: #0078D4; /* Highlight bold letters in Flexera blue */
 }
 </style>
 
 <div class="revix-header">
     <div class="revix-title">Revix</div>
-    <div class="revix-subtitle"><b>REV</b>olutionize Information, <b>EX</b>ecute faster</div>
+    <div class="revix-subtitle"><b>REV</b>olutionize <b>I</b>nformation, E<b>X</b>ecute faster</div>
 </div>
 """, unsafe_allow_html=True)
+
