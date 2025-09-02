@@ -37,7 +37,7 @@ client = Groq(api_key=GROQ_API_KEY)
 # ------------------------
 # Load Cached DataFrames
 # ------------------------
-DATA_FOLDER = os.path.join(os.path.dirname(_file_), "excel")
+DATA_FOLDER = os.path.join(os.path.dirname(__file__), "excel")
 DF_FILE = os.path.join(DATA_FOLDER, "dataframes.pkl")
 
 if not os.path.exists(DF_FILE):
