@@ -715,3 +715,34 @@ elif page == "🔔 Smart Alerts":
                 if cols[2].button("❌ Delete", key=f"del_{i}"):
                     st.session_state.alerts.pop(i)
                     st.rerun()
+# ------------------------
+# Custom Header (Revix Branding)
+# ------------------------
+st.markdown("""
+<style>
+.revix-header {
+    text-align: left;
+    font-family: 'Segoe UI', Tahoma, sans-serif;
+    padding: 10px 0;
+}
+.revix-title {
+    font-size: 36px;
+    font-weight: 900;
+    color: #0078D4; /* Flexera blue */
+    margin-bottom: -5px;
+}
+.revix-subtitle {
+    font-size: 16px;
+    color: #444;
+    font-weight: 500;
+}
+.revix-subtitle b {
+    color: #0078D4; /* Bold letters in same Flexera blue */
+}
+</style>
+
+<div class="revix-header">
+    <div class="revix-title">Revix</div>
+    <div class="revix-subtitle"><b>REV</b>olutionize Information, <b>EX</b>ecute faster</div>
+</div>
+""", unsafe_allow_html=True)
