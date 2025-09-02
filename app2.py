@@ -15,43 +15,7 @@ import random
 # Setup
 # ------------------------
 st.set_page_config(page_title="Revix Chatbot", page_icon="🤖", layout="wide")
-st.markdown("""
-<style>
-.top-banner {
-    width: 100%;
-    text-align: center;
-    background-color: #0e1117; /* same as background */
-    padding: 15px 10px;
-    font-size: 28px; /* increased font size for Revix */
-    font-weight: 600;
-    color: white;
-    white-space: nowrap;
-    overflow: hidden;
-}
 
-.top-banner span.revix {
-    background: linear-gradient(90deg, #007BFF, #00C6FF);
-    -webkit-background-clip: text;
-    color: transparent;
-    font-weight: bold;
-    font-size: 32px; /* slightly bigger for Revix */
-}
-
-.top-banner .highlight-x {
-    font-weight: bold;
-    color: white;
-}
-
-.top-banner .info-i {
-    font-weight: bold;
-    color: #007BFF; /* blue for I */
-}
-</style>
-
-<div class="top-banner">
-    <span class="revix">Revix</span> Information <span class="highlight-x">eXecute</span> – <span class="info-i">I</span> is blue
-</div>
-""", unsafe_allow_html=True)
 
 # ------------------------
 # Sidebar Navigation
@@ -757,56 +721,62 @@ elif page == "🔔 Smart Alerts":
 
 
 
-
-
-
-
-
-
 st.markdown("""
 <style>
-/* Sticky Revix Header */
-.revix-header {
+/* Sticky top banner */
+.revix-banner {
     position: fixed;
     top: 0;
     left: 0;
     width: 100%;
-    background: #111; /* Dark background */
+    background: #ffffff; /* White background for clean look */
     text-align: center;
-    padding: 12px 0;
+    padding: 10px 0;
     z-index: 9999;
-    border-bottom: 1px solid #333;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
 }
 
-.revix-header h1 {
+/* Main title: Revix with gradient */
+.revix-banner .revix-title {
+    font-size: 34px; /* Bigger font for Revix */
+    font-weight: bold;
     margin: 0;
-    font-size: 32px; /* Bigger font for Revix */
-    color: #fff;
-    font-weight: normal;
+    background: linear-gradient(90deg, #007BFF, #00C6FF);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
     font-family: 'Segoe UI', Tahoma, sans-serif;
 }
 
-.revix-text {
-    background: linear-gradient(90deg, #0078D4, #00AEEF); /* Gradient blue */
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
+/* Subheading with styling rules */
+.revix-banner .revix-subtitle {
+    font-size: 16px;
+    color: #333;
+    margin: 5px 0 0 0;
+    font-family: 'Segoe UI', Tahoma, sans-serif;
+}
+
+.revix-banner .revix-subtitle b {
+    color: #007BFF; /* Blue for I and X */
     font-weight: bold;
 }
 
-.revix-header h1 b {
-    color: #0078D4; /* Blue for bold letters */
-    font-weight: bold;
-}
-
-/* Push page content down to avoid overlap */
+/* Push content down so it doesn't hide under banner */
 .block-container {
-    padding-top: 80px !important;
+    padding-top: 100px !important;
 }
 </style>
 
-<header class="revix-header">
-    <h1><span class="revix-text">Revix</span> – <b>R</b>ev<b>I</b>nformation e<b>x</b>ecute</h1>
-</header>
+<div class="revix-banner">
+    <h1 class="revix-title">Revix</h1>
+    <p class="revix-subtitle"><b>R</b>ev<b>I</b>nformation e<b>X</b>ecute</p>
+</div>
 """, unsafe_allow_html=True)
+
+
+
+
+
+
+
 
 
