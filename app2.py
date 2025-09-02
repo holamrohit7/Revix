@@ -15,6 +15,43 @@ import random
 # Setup
 # ------------------------
 st.set_page_config(page_title="Revix Chatbot", page_icon="🤖", layout="wide")
+st.markdown("""
+<style>
+.top-banner {
+    width: 100%;
+    text-align: center;
+    background-color: #0e1117; /* same as background */
+    padding: 15px 10px;
+    font-size: 28px; /* increased font size for Revix */
+    font-weight: 600;
+    color: white;
+    white-space: nowrap;
+    overflow: hidden;
+}
+
+.top-banner span.revix {
+    background: linear-gradient(90deg, #007BFF, #00C6FF);
+    -webkit-background-clip: text;
+    color: transparent;
+    font-weight: bold;
+    font-size: 32px; /* slightly bigger for Revix */
+}
+
+.top-banner .highlight-x {
+    font-weight: bold;
+    color: white;
+}
+
+.top-banner .info-i {
+    font-weight: bold;
+    color: #007BFF; /* blue for I */
+}
+</style>
+
+<div class="top-banner">
+    <span class="revix">Revix</span> Information <span class="highlight-x">eXecute</span> – <span class="info-i">I</span> is blue
+</div>
+""", unsafe_allow_html=True)
 
 # ------------------------
 # Sidebar Navigation
