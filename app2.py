@@ -715,42 +715,61 @@ elif page == "🔔 Smart Alerts":
                 if cols[2].button("❌ Delete", key=f"del_{i}"):
                     st.session_state.alerts.pop(i)
                     st.rerun()
-# ------------------------
-# Global Header (Revix Branding)
-# ------------------------
+
+
+
+
+
+
+
+
+
+
+
 st.markdown("""
 <style>
+/* Sticky Revix Header */
 .revix-header {
-    text-align: left;
-    font-family: 'Segoe UI', Tahoma, sans-serif;
-    padding: 10px 0 15px 0;
-    border-bottom: 1px solid #ccc;
-    margin-bottom: 15px;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    background: #111; /* Dark background */
+    text-align: center;
+    padding: 12px 0;
+    z-index: 9999;
+    border-bottom: 1px solid #333;
 }
 
-.revix-title {
-    font-size: 48px; /* Increased size */
-    font-weight: 900;
+.revix-header h1 {
+    margin: 0;
+    font-size: 32px; /* Bigger font for Revix */
+    color: #fff;
+    font-weight: normal;
+    font-family: 'Segoe UI', Tahoma, sans-serif;
+}
+
+.revix-text {
     background: linear-gradient(90deg, #0078D4, #00AEEF); /* Gradient blue */
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
-    margin-bottom: -5px;
+    font-weight: bold;
 }
 
-.revix-subtitle {
-    font-size: 18px;
-    color: #444;
-    font-weight: 500;
+.revix-header h1 b {
+    color: #0078D4; /* Blue for bold letters */
+    font-weight: bold;
 }
 
-.revix-subtitle b {
-    color: #0078D4; /* Highlight bold letters in Flexera blue */
+/* Push page content down to avoid overlap */
+.block-container {
+    padding-top: 80px !important;
 }
 </style>
 
-<div class="revix-header">
-    <div class="revix-title">Revix</div>
-    <div class="revix-subtitle"><b>REV</b>olutionize <b>I</b>nformation, E<b>X</b>ecute faster</div>
-</div>
+<header class="revix-header">
+    <h1><span class="revix-text">Revix</span> – <b>R</b>ev<b>I</b>nformation e<b>x</b>ecute</h1>
+</header>
 """, unsafe_allow_html=True)
+
 
