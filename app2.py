@@ -4,17 +4,103 @@ import pandas as pd
 import streamlit as st
 import plotly.express as px
 import plotly.graph_objects as go
+import calendar
+import numpy as np
 import streamlit.components.v1 as components
 from dotenv import load_dotenv
 from groq import Groq
 import uuid
 from datetime import date
-import random
+
+# ------------------------
+# Custom CSS
+# ------------------------
+st.markdown("""
+<style>
+    /* Page background & font */
+    html, body, [class*="css"]  {
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial;
+        background: linear-gradient(180deg, #f8fafc 0%, #ffffff 60%);
+    }
+
+    /* Main Layout */
+    .block-container {
+        padding-top: 1.5rem;
+        padding-bottom: 1rem;
+    }
+
+    /* Headers */
+    .main-header {
+        font-size: 2.5rem;
+        color: #0f172a; /* deep slate */
+        text-align: center;
+        margin-bottom: 0.2rem;
+        font-weight: 700;
+    }
+    .main-subtitle {
+        color: #475569; /* muted slate */
+        text-align: center;
+        font-size: 1.05rem;
+        margin-bottom: 1.6rem;
+    }
+
+    /* KPI Cards */
+    .kpi-card {
+        background: linear-gradient(180deg, #ffffff, #fbfdff);
+        border-radius: 0.6rem;
+        padding: 1.25rem;
+        box-shadow: 0 6px 18px rgba(2,6,23,0.08);
+        text-align: center;
+        height: 100%;
+    }
+    .kpi-card h3 {
+        margin: 0;
+        font-size: 0.9rem;
+        color: #64748b;
+    }
+    .kpi-value {
+        font-size: 1.6rem;
+        font-weight: 700;
+        color: #0f172a;
+        margin: 0.4rem 0;
+    }
+    .kpi-target {
+        font-size: 0.85rem;
+        color: #94a3b8;
+    }
+
+    /* Charts */
+    .chart-container {
+        background: white;
+        border-radius: 0.5rem;
+        padding: 0.85rem;
+        box-shadow: 0 6px 18px rgba(2,6,23,0.04);
+        margin-bottom: 1rem;
+    }
+
+    /* Form */
+    .form-container {
+        background: white;
+        border-radius: 0.5rem;
+        padding: 1rem;
+        box-shadow: 0 6px 18px rgba(2,6,23,0.04);
+    }
+    .stButton > button {
+        width: 100%;
+        background-color: #0ea5a4; /* teal accent */
+        color: white;
+        border: none;
+    }
+
+    /* Small tweaks to make plotly cards blend */
+    .plotly-graph-div .main-svg { background: transparent !important; }
+</style>
+""", unsafe_allow_html=True)
 
 # ------------------------
 # Setup
 # ------------------------
-st.set_page_config(page_title="Revix Chatbot", page_icon="🤖", layout="wide")
+st.set_page_config(page_title="Revix Analytics", page_icon="🤖", layout="wide")
 
 
 # ------------------------
@@ -38,6 +124,569 @@ client = Groq(api_key=GROQ_API_KEY)
 # ------------------------
 # Load Cached DataFrames
 # ------------------------
+DATA_FOLDER = os.path.join(os.path.dirname(__file__), "excel")
+DF_FILE = os.path.join(DATA_FOLDER, "dataframes.pkl")
+
+if not os.path.exists(DF_FILE):
+    st.error("❌ dataframes.pkl not found in repo. Please make sure it exists inside /excel folder.")
+    st.stop()
+
+with open(DF_FILE, "rb") as f:
+    dataframes = pickle.load(f)
+
+# Initialize session state keys used throughout the app to avoid AttributeError
+if 'plotly_dark' not in st.session_state:
+    st.session_state.plotly_dark = True
+if 'last_result' not in st.session_state:
+    st.session_state.last_result = None
+if 'messages' not in st.session_state:
+    st.session_state.messages = []
+if 'actions' not in st.session_state:
+    st.session_state.actions = []
+if 'alerts' not in st.session_state:
+    st.session_state.alerts = []
+
+
+if page == "📊 KPI Dashboard":
+    # Header
+    st.markdown("<h1 class='main-header'>Revix Analytics</h1>", unsafe_allow_html=True)
+    st.markdown("<p class='main-subtitle'>AI-Powered Data Insights</p>", unsafe_allow_html=True)
+    
+    # Filters
+    st.subheader("🔎 Filters")
+    col1, col2 = st.columns(2)
+
+    # Build product options from actual DataFrame 'Product' columns (ignore datasource tokens)
+    def gather_products(dfs, ignore_tokens=None):
+        ignore_tokens = set([t.lower() for t in (ignore_tokens or [])])
+        prods = set()
+        # Prefer explicit 'Product' column when present
+        for name, df in dfs.items():
+            for col in df.columns:
+                if col.lower() == "product":
+                    vals = df[ col ].dropna().astype(str).str.strip()
+                    for v in vals.unique():
+                        if v and v.lower() not in ignore_tokens:
+                            prods.add(v)
+                    break
+
+        # Fallback: look for other candidate columns if nothing found
+        if not prods:
+            candidates = ["product", "prod", "product_code", "product_name", "sku", "item", "plan"]
+            for name, df in dfs.items():
+                for c in df.columns:
+                    if c.lower() in candidates:
+                        vals = df[c].dropna().astype(str).str.strip()
+                        for v in vals.unique():
+                            if v and v.lower() not in ignore_tokens:
+                                prods.add(v)
+        return sorted(prods)
+
+    datasource_tokens = ["salesforce", "revenue", "gainsight", "usage", "jira"]
+    product_options = ["All"] + gather_products(dataframes, ignore_tokens=datasource_tokens)
+
+    with col1:
+        product = st.selectbox("Product", options=product_options, key="product_main")
+
+    with col2:
+        month = st.selectbox("Month", options=["All", "January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"], key="month_main")
+
+    # KPI Gauges (dynamic from selected Product / Month)
+    st.subheader("📊 KPI Gauges")
+    kpi_cols = st.columns(5)
+
+    # Helpers to filter by product and month
+    month_name_to_num = {m: i for i, m in enumerate(calendar.month_name) if m}
+
+    def df_matches_month(series, month_name):
+        # Try parsing datelike values, else try extracting MM from YYYY-MM
+        try:
+            parsed = pd.to_datetime(series, errors='coerce')
+            if parsed.notna().any():
+                return parsed.dt.month == month_name_to_num.get(month_name, -1)
+        except Exception:
+            pass
+        # fallback: strings like YYYY-MM or YYYY-M
+        s = series.astype(str).str.strip()
+        mm = s.str.extract(r"-(\d{1,2})$")
+        if not mm.empty:
+            mm = mm[0].astype(float).fillna(-1).astype(int)
+            return mm == month_name_to_num.get(month_name, -1)
+        return pd.Series([False] * len(series), index=series.index)
+
+    def filter_df_for_selection(df, sel_product, sel_month):
+        d = df.copy()
+        # product filter
+        prod_cols = [c for c in d.columns if c.lower() == 'product']
+        if sel_product and sel_product != 'All' and prod_cols:
+            col = prod_cols[0]
+            d = d[d[col].astype(str).str.strip().str.lower() == sel_product.strip().lower()]
+
+        # month filter
+        if sel_month and sel_month != 'All':
+            month_cols = [c for c in d.columns if c.lower() == 'month' or 'date' in c.lower()]
+            if month_cols:
+                mcol = month_cols[0]
+                mask = df_matches_month(d[mcol], sel_month)
+                d = d[mask]
+        return d
+
+    # Build combined frame from all DataFrames that have a Product column
+    frames = []
+    for name, df in dataframes.items():
+        if any(c.lower() == 'product' for c in df.columns):
+            try:
+                sub = filter_df_for_selection(df, product, month)
+                if not sub.empty:
+                    sub['_source_df'] = name
+                    frames.append(sub)
+            except Exception:
+                continue
+
+    combined = pd.concat(frames, ignore_index=True) if frames else pd.DataFrame()
+
+    # Compute dynamic KPIs where possible
+    def safe_sum_cols(df, candidates):
+        for c in df.columns:
+            if any(k in c.lower() for k in candidates):
+                try:
+                    return df[c].dropna().astype(float).sum()
+                except Exception:
+                    continue
+        return None
+
+    revenue_val = None
+    health_val = None
+    uptime_val = None
+    bugfix_val = None
+    tickets_val = None
+
+    if not combined.empty:
+        # Revenue-like columns
+        revenue_val = safe_sum_cols(combined, ['revenue', 'amount', 'price', 'sales'])
+        # Health/CSAT like
+        for c in combined.columns:
+            if 'health' in c.lower() or 'csat' in c.lower() or 'satisfaction' in c.lower():
+                try:
+                    health_val = float(combined[c].dropna().astype(float).mean())
+                    break
+                except Exception:
+                    continue
+        # Uptime (heuristic: uptime/availability columns)
+        def parse_percent_like(series):
+            """Try to coerce values like '99.5%', '0.995', '99.5' into a 0-100 float percent."""
+            s = series.dropna().astype(str).str.strip()
+            if s.empty:
+                return None
+            # strip percent sign
+            s_nopct = s.str.rstrip('%')
+            # try float conversion
+            try:
+                vals = pd.to_numeric(s_nopct, errors='coerce').dropna()
+                if vals.empty:
+                    return None
+                # if values mostly <=1 assume fractional (0.995) => convert to percent
+                med = vals.median()
+                if med <= 1.0:
+                    vals = vals * 100.0
+                return float(vals.mean())
+            except Exception:
+                return None
+
+        uptime_val = None
+        for c in combined.columns:
+            if any(k in c.lower() for k in ['uptime', 'availability', 'service_level']):
+                try:
+                    parsed = parse_percent_like(combined[c])
+                    if parsed is not None:
+                        uptime_val = parsed
+                        break
+                except Exception:
+                    continue
+        # fallback: try searching other dataframes for uptime-like columns
+        if uptime_val is None:
+            for name, df in dataframes.items():
+                for c in df.columns:
+                    if any(k in c.lower() for k in ['uptime', 'availability', 'service_level']):
+                        try:
+                            parsed = parse_percent_like(df[c])
+                            if parsed is not None:
+                                uptime_val = parsed
+                                break
+                        except Exception:
+                            continue
+                if uptime_val is not None:
+                    break
+
+        # Secondary fallback: use Health Score or CSAT Score as a proxy for uptime (0-100 scale expected)
+        if uptime_val is None:
+            for name, df in dataframes.items():
+                for c in df.columns:
+                    if any(k in c.lower() for k in ['health score', 'health', 'csat', 'csat score', 'satisfaction']):
+                        try:
+                            vals = pd.to_numeric(df[c].dropna(), errors='coerce').dropna()
+                            if not vals.empty:
+                                uptime_val = float(vals.mean())
+                                break
+                        except Exception:
+                            continue
+                if uptime_val is not None:
+                    break
+
+        # Tertiary fallback: derive a resolution-rate proxy from jira/salesforce (closed/resolved ratio)
+        if uptime_val is None:
+            # check jira
+            if 'jira' in dataframes:
+                jdf = dataframes['jira']
+                status_cols = [c for c in jdf.columns if 'status' in c.lower() or 'resolution' in c.lower() or 'resolved' in c.lower()]
+                if status_cols:
+                    try:
+                        s = jdf[status_cols[0]].astype(str).str.lower()
+                        closed = s.isin(['closed', 'resolved', 'done']).sum()
+                        total = len(s)
+                        if total > 0:
+                            uptime_val = round((closed / total) * 100.0, 2)
+                    except Exception:
+                        pass
+            # check salesforce if still none
+            if uptime_val is None and 'salesforce' in dataframes:
+                sdf = dataframes['salesforce']
+                status_cols = [c for c in sdf.columns if 'status' in c.lower() or 'resolved' in c.lower()]
+                if status_cols:
+                    try:
+                        s = sdf[status_cols[0]].astype(str).str.lower()
+                        closed = s.isin(['closed', 'resolved', 'done']).sum()
+                        total = len(s)
+                        if total > 0:
+                            uptime_val = round((closed / total) * 100.0, 2)
+                    except Exception:
+                        pass
+        # Tickets resolved: from salesforce-like support rows
+        if 'Status' in combined.columns:
+            try:
+                tickets_val = int((combined['Status'].astype(str).str.lower() == 'closed').sum())
+            except Exception:
+                tickets_val = None
+
+        # Bug Fix Rate heuristic: look for resolved/closed vs open/total from issue-like datasets
+        # Strategy: if there are columns like 'status' or 'resolved' or 'issue status', compute closed/total
+        bug_fix_rate = None
+        status_cols = [c for c in combined.columns if 'status' in c.lower()]
+        if status_cols:
+            try:
+                s = combined[status_cols[0]].astype(str).str.lower()
+                closed = s.isin(['closed', 'resolved', 'done']).sum()
+                total = len(s)
+                if total > 0:
+                    bugfix_val = round((closed / total) * 100, 2)
+            except Exception:
+                bugfix_val = None
+        else:
+            # fallback: look for numeric columns with 'fix' keyword
+            for c in combined.columns:
+                if any(k in c.lower() for k in ['fix', 'fix_rate', 'fixes', 'resolved']):
+                    try:
+                        bugfix_val = float(combined[c].dropna().astype(float).mean())
+                        break
+                    except Exception:
+                        continue
+
+    # Fallback static defaults when calculation not possible
+    # If both filters are 'All', show full (100%) KPIs as a high-level dashboard
+    if (product == 'All' or product is None) and (month == 'All' or month is None):
+        kpi_data = [
+            {"title": "Revenue", "value": 150000, "target": 150000, "color": "#10B981"},
+            {"title": "Customer Satisfaction", "value": 100.0, "target": 100, "color": "#3B82F6"},
+            {"title": "Product Uptime", "value": 100.0, "target": 100, "color": "#6366F1"},
+            {"title": "Bug Fix Rate", "value": 100.0, "target": 100, "color": "#F59E0B"},
+            {"title": "Tickets Resolved", "value": 200, "target": 200, "color": "#EF4444"}
+        ]
+    else:
+        kpi_data = [
+            {"title": "Revenue", "value": revenue_val if revenue_val is not None else "-", "target": 150000, "color": "#10B981"},
+            {"title": "Customer Satisfaction", "value": health_val if health_val is not None else "-", "target": 100, "color": "#3B82F6"},
+            {"title": "Product Uptime", "value": uptime_val if uptime_val is not None else "-", "target": 100, "color": "#6366F1"},
+            {"title": "Bug Fix Rate", "value": bugfix_val if bugfix_val is not None else "-", "target": 100, "color": "#F59E0B"},
+            {"title": "Tickets Resolved", "value": tickets_val if tickets_val is not None else "-", "target": 200, "color": "#EF4444"}
+        ]
+
+    for col, kpi in zip(kpi_cols, kpi_data):
+        with col:
+            # Prepare a user-friendly display value with one decimal when numeric
+            if isinstance(kpi['value'], (int, float)):
+                if kpi['target'] == 100:
+                    display_value = f"{kpi['value']:.1f}%"
+                else:
+                    display_value = f"{kpi['value']:.1f}"
+            else:
+                display_value = kpi['value']
+
+            st.markdown(f"""
+                <div class='kpi-card'>
+                    <h3>{kpi['title']}</h3>
+                    <div class='kpi-value'>{display_value}</div>
+                    <div class='kpi-target'>/ {kpi['target']:,}</div>
+                </div>
+            """, unsafe_allow_html=True)
+
+            # Gauge uses a numeric percent between 0 and 100
+            if isinstance(kpi['value'], (int, float)) and isinstance(kpi['target'], (int, float)) and kpi['target']:
+                pct = min(100.0, max(0.0, (float(kpi['value']) / float(kpi['target'])) * 100.0))
+            else:
+                pct = 0.0
+
+            fig = go.Figure(go.Indicator(mode="gauge+number", value=round(pct, 1), gauge={'axis': {'range': [None, 100]}, 'bar': {'color': kpi['color']}}))
+            fig.update_layout(height=140, margin=dict(l=8, r=8, t=8, b=8))
+            st.plotly_chart(fig, use_container_width=True)
+
+    # KPI Charts (reflect selection)
+    st.subheader("📈 KPI Charts")
+    chart_cols = st.columns(2)
+
+    # Build four KPI line charts from combined data if available
+    if not combined.empty:
+        # ensure we have a datetime column
+        time_cols = [c for c in combined.columns if 'date' in c.lower() or c.lower() == 'month']
+        if time_cols:
+            tcol = time_cols[0]
+            ts = combined.copy()
+            ts['_dt'] = pd.to_datetime(ts[tcol], errors='coerce')
+            ts = ts.dropna(subset=['_dt'])
+            if not ts.empty:
+                # normalize month bucket
+                ts['month'] = ts['_dt'].dt.to_period('M').dt.to_timestamp()
+                # human-friendly month label for x-axis (e.g., 'Mar 2025')
+                ts['month_label'] = ts['month'].dt.strftime('%b %Y')
+
+                # Monthly Revenue trend
+                rev_col = None
+                for c in ts.columns:
+                    if any(k in c.lower() for k in ['revenue', 'amount', 'sales']):
+                        rev_col = c
+                        break
+                if rev_col:
+                    rev_trend = ts.groupby('month')[rev_col].sum().reset_index()
+                    rev_trend['month_label'] = rev_trend['month'].dt.strftime('%b %Y')
+                    fig_rev = px.line(rev_trend, x='month_label', y=rev_col, title='Monthly Revenue Trend')
+                    # single smooth trend line, no markers
+                    fig_rev.update_traces(mode='lines', line=dict(width=3, color='#10B981'))
+                    fig_rev.update_layout(yaxis_title='Revenue', xaxis_title='Month')
+                    # sleek transparent background and minimal grid
+                    fig_rev.update_layout(plot_bgcolor='rgba(0,0,0,0)', paper_bgcolor='rgba(0,0,0,0)')
+                    fig_rev.update_xaxes(showgrid=False)
+                    fig_rev.update_yaxes(showgrid=False)
+                    if st.session_state.plotly_dark:
+                        fig_rev.update_layout(template='plotly_dark')
+                    chart_cols[0].plotly_chart(fig_rev, use_container_width=True)
+                else:
+                    # Fallback: use first numeric column as revenue proxy
+                    num_cols = ts.select_dtypes(include=['number']).columns.tolist()
+                    if num_cols:
+                        rev_col = num_cols[0]
+                        rev_trend = ts.groupby('month')[rev_col].sum().reset_index()
+                        rev_trend['month_label'] = rev_trend['month'].dt.strftime('%b %Y')
+                        fig_rev = px.line(rev_trend, x='month_label', y=rev_col, title=f'Monthly Revenue Trend ({rev_col})')
+                        fig_rev.update_traces(mode='lines', line=dict(width=3, color='#10B981'))
+                        fig_rev.update_layout(plot_bgcolor='rgba(0,0,0,0)', paper_bgcolor='rgba(0,0,0,0)')
+                        fig_rev.update_xaxes(showgrid=False)
+                        fig_rev.update_yaxes(showgrid=False)
+                        if st.session_state.plotly_dark:
+                            fig_rev.update_layout(template='plotly_dark')
+                        chart_cols[0].plotly_chart(fig_rev, use_container_width=True)
+                    else:
+                        chart_cols[0].info('Monthly Revenue trend not available for selection.')
+
+                # Product Uptime Trend (use parse_percent_like on candidate columns or proxy)
+                uptime_series = None
+                for c in ts.columns:
+                    if any(k in c.lower() for k in ['uptime', 'availability', 'service_level']):
+                        # per-month parsed percent
+                        def _month_pct(d):
+                            return parse_percent_like(d[c])
+                        uptime_series = ts.groupby('month').apply(lambda d: _month_pct(d)).reset_index(name='uptime')
+                        break
+                if uptime_series is None:
+                    # try health/csat as proxy
+                    for c in ts.columns:
+                        if any(k in c.lower() for k in ['health', 'csat', 'satisfaction']):
+                            uptime_series = ts.groupby('month')[c].mean().reset_index().rename(columns={c: 'uptime'})
+                            break
+                if uptime_series is not None:
+                    # ensure label exists
+                    if 'month' in uptime_series.columns and 'month_label' not in uptime_series.columns:
+                        try:
+                            uptime_series['month_label'] = uptime_series['month'].dt.strftime('%b %Y')
+                        except Exception:
+                            uptime_series['month_label'] = uptime_series['month'].astype(str)
+                    fig_up = px.line(uptime_series, x='month_label', y='uptime', title='Product Uptime Trend')
+                    fig_up.update_traces(mode='lines', line=dict(width=3, color='#6366F1'))
+                    fig_up.update_layout(yaxis_title='Uptime (%)', xaxis_title='Month')
+                    fig_up.update_layout(plot_bgcolor='rgba(0,0,0,0)', paper_bgcolor='rgba(0,0,0,0)')
+                    fig_up.update_xaxes(showgrid=False)
+                    fig_up.update_yaxes(showgrid=False)
+                    if st.session_state.plotly_dark:
+                        fig_up.update_layout(template='plotly_dark')
+                    chart_cols[1].plotly_chart(fig_up, use_container_width=True)
+                else:
+                    chart_cols[1].info('Product Uptime trend not available for selection.')
+
+                # Customer Satisfaction by month
+                csat_col = None
+                for c in ts.columns:
+                    if any(k in c.lower() for k in ['csat', 'satisfaction', 'health score', 'health']):
+                        csat_col = c
+                        break
+                if csat_col:
+                    csat_trend = ts.groupby('month')[csat_col].mean().reset_index()
+                    csat_trend['month_label'] = csat_trend['month'].dt.strftime('%b %Y')
+                    fig_cs = px.line(csat_trend, x='month_label', y=csat_col, title='Customer Satisfaction by Month')
+                    fig_cs.update_traces(mode='lines', line=dict(width=3, color='#3B82F6'))
+                    fig_cs.update_layout(yaxis_title='Satisfaction (score)', xaxis_title='Month')
+                    fig_cs.update_layout(plot_bgcolor='rgba(0,0,0,0)', paper_bgcolor='rgba(0,0,0,0)')
+                    fig_cs.update_xaxes(showgrid=False)
+                    fig_cs.update_yaxes(showgrid=False)
+                    if st.session_state.plotly_dark:
+                        fig_cs.update_layout(template='plotly_dark')
+                    chart_cols[0].plotly_chart(fig_cs, use_container_width=True)
+                else:
+                    chart_cols[0].info('Customer Satisfaction by month not available for selection.')
+
+                # Bug Fix Rate by month
+                bug_col = None
+                status_cols = [c for c in ts.columns if 'status' in c.lower()]
+                if status_cols:
+                    s = ts.copy()
+                    sc = status_cols[0]
+                    s['is_closed'] = s[sc].astype(str).str.lower().isin(['closed', 'resolved', 'done']).astype(int)
+                    bug_trend = s.groupby('month')['is_closed'].mean().reset_index()
+                    bug_trend['fix_rate'] = bug_trend['is_closed'] * 100.0
+                    bug_trend['month_label'] = bug_trend['month'].dt.strftime('%b %Y')
+                    fig_bug = px.line(bug_trend, x='month_label', y='fix_rate', title='Bug Fix Rate by Month')
+                    fig_bug.update_traces(mode='lines', line=dict(width=3, color='#F59E0B'))
+                    fig_bug.update_layout(yaxis_title='Fix Rate (%)', xaxis_title='Month')
+                    fig_bug.update_layout(plot_bgcolor='rgba(0,0,0,0)', paper_bgcolor='rgba(0,0,0,0)')
+                    fig_bug.update_xaxes(showgrid=False)
+                    fig_bug.update_yaxes(showgrid=False)
+                    if st.session_state.plotly_dark:
+                        fig_bug.update_layout(template='plotly_dark')
+                    chart_cols[1].plotly_chart(fig_bug, use_container_width=True)
+                else:
+                    # fallback to numeric fix-like columns
+                    for c in ts.columns:
+                        if any(k in c.lower() for k in ['fix', 'fix_rate', 'fixes', 'resolved']):
+                            bug_col = c
+                            break
+                    if bug_col:
+                        bug_trend = ts.groupby('month')[bug_col].mean().reset_index()
+                        bug_trend['month_label'] = bug_trend['month'].dt.strftime('%b %Y')
+                        fig_bug2 = px.line(bug_trend, x='month_label', y=bug_col, title='Bug Fix Rate by Month')
+                        fig_bug2.update_traces(mode='lines', line=dict(width=3, color='#F59E0B'))
+                        fig_bug2.update_layout(yaxis_title='Fix Rate', xaxis_title='Month')
+                        fig_bug2.update_layout(plot_bgcolor='rgba(0,0,0,0)', paper_bgcolor='rgba(0,0,0,0)')
+                        fig_bug2.update_xaxes(showgrid=False)
+                        fig_bug2.update_yaxes(showgrid=False)
+                        if st.session_state.plotly_dark:
+                            fig_bug2.update_layout(template='plotly_dark')
+                        chart_cols[1].plotly_chart(fig_bug2, use_container_width=True)
+                    else:
+                        chart_cols[1].info('Bug Fix Rate by month not available for selection.')
+
+                # Tickets Resolved by month (new chart)
+                # Tickets Resolved by month
+                tickets_trend = None
+                status_candidates = [c for c in ts.columns if 'status' in c.lower() or 'resolved' in c.lower()]
+                if status_candidates:
+                    status_col = status_candidates[0]
+                    tdf = ts.copy()
+                    tdf['is_resolved'] = tdf[status_col].astype(str).str.lower().isin(['closed', 'resolved', 'done']).astype(int)
+                    tickets_trend = tdf.groupby('month')['is_resolved'].sum().reset_index().rename(columns={'is_resolved': 'tickets_resolved'})
+                else:
+                    # fallback: look for 'resolved'/'closed' across original dataframes
+                    for name, odf in dataframes.items():
+                        if any('status' in c.lower() or 'resolved' in c.lower() for c in odf.columns):
+                            oc = [c for c in odf.columns if 'status' in c.lower() or 'resolved' in c.lower()][0]
+                            odf2 = odf.copy()
+                            # attempt to find a date/month column
+                            timecols = [c for c in odf2.columns if 'date' in c.lower() or c.lower() == 'month']
+                            if timecols:
+                                dtc = timecols[0]
+                                odf2['_dt'] = pd.to_datetime(odf2[dtc], errors='coerce')
+                                odf2 = odf2.dropna(subset=['_dt'])
+                                odf2['month'] = odf2['_dt'].dt.to_period('M').dt.to_timestamp()
+                                odf2['is_resolved'] = odf2[oc].astype(str).str.lower().isin(['closed', 'resolved', 'done']).astype(int)
+                                tickets_trend = odf2.groupby('month')['is_resolved'].sum().reset_index().rename(columns={'is_resolved': 'tickets_resolved'})
+                                break
+
+                if tickets_trend is not None and not tickets_trend.empty:
+                    # ensure month_label
+                    if 'month' in tickets_trend.columns and 'month_label' not in tickets_trend.columns:
+                        try:
+                            tickets_trend['month_label'] = tickets_trend['month'].dt.strftime('%b %Y')
+                        except Exception:
+                            tickets_trend['month_label'] = tickets_trend['month'].astype(str)
+                    fig_tickets = px.bar(tickets_trend, x='month_label', y='tickets_resolved', title='Tickets Resolved by Month', color='tickets_resolved', color_continuous_scale=px.colors.sequential.Viridis)
+                    fig_tickets.update_layout(yaxis_title='Tickets Resolved', xaxis_title='Month')
+                    fig_tickets.update_layout(plot_bgcolor='rgba(0,0,0,0)', paper_bgcolor='rgba(0,0,0,0)')
+                    fig_tickets.update_xaxes(showgrid=False)
+                    fig_tickets.update_yaxes(showgrid=False)
+                    if st.session_state.plotly_dark:
+                        fig_tickets.update_layout(template='plotly_dark')
+                    chart_cols[0].plotly_chart(fig_tickets, use_container_width=True)
+                else:
+                    chart_cols[0].info('Tickets Resolved by month not available for selection.')
+
+                # Combined: Revenue vs Satisfaction vs Tickets (multi-axis / area)
+                # Build a combined monthly DF with revenue, satisfaction, tickets
+                combined_metrics = []
+                if rev_col:
+                    revm = ts.groupby('month')[rev_col].sum().reset_index().rename(columns={rev_col: 'revenue'})
+                    combined_metrics.append(revm.set_index('month'))
+                if csat_col:
+                    csatm = ts.groupby('month')[csat_col].mean().reset_index().rename(columns={csat_col: 'satisfaction'})
+                    combined_metrics.append(csatm.set_index('month'))
+                if 'is_resolved' in locals() or 'is_resolved' in ts.columns:
+                    # ensure tickets_trend exists
+                    try:
+                        tmetric = tickets_trend.set_index('month')
+                        combined_metrics.append(tmetric)
+                    except Exception:
+                        pass
+
+                if combined_metrics:
+                    # merge all on month
+                    df_comb = pd.concat(combined_metrics, axis=1).reset_index()
+                    # human readable month label
+                    if 'month' in df_comb.columns and 'month_label' not in df_comb.columns:
+                        try:
+                            df_comb['month_label'] = df_comb['month'].dt.strftime('%b %Y')
+                        except Exception:
+                            df_comb['month_label'] = df_comb['month'].astype(str)
+                    # normalize scales for plotting: revenue on secondary axis
+                    fig_combo = go.Figure()
+                    if 'revenue' in df_comb.columns:
+                        fig_combo.add_trace(go.Bar(x=df_comb['month_label'], y=df_comb['revenue'], name='Revenue', marker_color='#10B981', yaxis='y1', opacity=0.9))
+                    if 'satisfaction' in df_comb.columns:
+                        fig_combo.add_trace(go.Scatter(x=df_comb['month_label'], y=df_comb['satisfaction'], name='Satisfaction', mode='lines', line=dict(color='#3B82F6', width=3), yaxis='y2'))
+                    if 'tickets_resolved' in df_comb.columns:
+                        fig_combo.add_trace(go.Scatter(x=df_comb['month_label'], y=df_comb['tickets_resolved'], name='Tickets Resolved', mode='lines', line=dict(color='#6366F1', width=3, dash='dash'), yaxis='y2'))
+
+                    # Layout with two y axes, transparent
+                    fig_combo.update_layout(title='Revenue vs Satisfaction vs Tickets', xaxis=dict(title='Month', showgrid=False), yaxis=dict(title='Revenue', side='left', showgrid=False), yaxis2=dict(title='Score / Tickets', overlaying='y', side='right', showgrid=False))
+                    fig_combo.update_layout(plot_bgcolor='rgba(0,0,0,0)', paper_bgcolor='rgba(0,0,0,0)')
+                    if st.session_state.plotly_dark:
+                        fig_combo.update_layout(template='plotly_dark')
+                    chart_cols[1].plotly_chart(fig_combo, use_container_width=True)
+            else:
+                chart_cols[0].info('No parsable date/month column found for KPI charts.')
+        else:
+            chart_cols[0].info('No date/month column found for KPI charts.')
+    else:
+        chart_cols[0].info('No data matches the selected Product/Month.')
+        chart_cols[1].info("Try selecting a different product or 'All'.")
+
+    # ------------------------
+    # Load Cached DataFrames
+    # ------------------------
 DATA_FOLDER = os.path.join(os.path.dirname(__file__), "excel")
 DF_FILE = os.path.join(DATA_FOLDER, "dataframes.pkl")
 
@@ -203,9 +852,9 @@ if page == "💬 Chat":
     # Render past messages
     for msg in st.session_state.messages:
         if msg["role"] == "user":
-            
             st.chat_message("user").markdown(msg["content"])
         else:
+            # assistant message
             st.chat_message("assistant").markdown(msg["content"])
 
             # --- table ---
@@ -224,7 +873,7 @@ if page == "💬 Chat":
                 with st.form(f"assign_form_{msg['id']}", clear_on_submit=True):
                     to = st.text_input("Assign to (email or name)", key=f"to_{msg['id']}")
                     due = st.date_input("Due Date", min_value=date.today(), key=f"due_{msg['id']}")
-                    priority = st.selectbox("Priority", ["Low", "Medium", "High"], index=1, key=f"priority_{msg['id']}")  # ✅ Added
+                    priority = st.selectbox("Priority", ["Low", "Medium", "High"], index=1, key=f"priority_{msg['id']}")
                     msg_text = st.text_area("Message", "Hi, Check this data and take necessary action.", key=f"msg_{msg['id']}")
                     submitted = st.form_submit_button("✅ Confirm Assign")
 
@@ -233,10 +882,9 @@ if page == "💬 Chat":
                             "id": str(uuid.uuid4())[:8],
                             "to": to.strip(),
                             "due": str(due),
-                            "priority": priority,  # ✅ Store priority
+                            "priority": priority,
                             "msg": msg_text,
                             "answer": msg["content"],
-                            "priority": "Medium",
                             "status": "Assigned"
                         }
                         st.session_state.actions.append(action)
@@ -244,7 +892,7 @@ if page == "💬 Chat":
                         st.rerun()
 
     # --- new query ---
-    query = st.chat_input("Ask about your data...")
+    query = st.chat_input("Ask about your data...", key="chat_input_main")
 
     if query:
         st.session_state.messages.append({"role": "user", "content": query, "id": str(uuid.uuid4())[:8]})
@@ -377,114 +1025,51 @@ if page == "💬 Chat":
 
 
 elif page == "📊 KPI Dashboard":
-    st.title("📊 KPI Dashboard")
+    pass
 
-    # ----- Sample Data -----
-    random.seed(42)
-    months = pd.date_range(start="2025-01-01", periods=12, freq="M")
-    df_kpi = pd.DataFrame({
-        "Month": months.strftime("%b"),
-        "Product": [random.choice(["FNA", "FNB", "FNC"]) for _ in months],
-        "Revenue": [random.randint(50000, 150000) for _ in months],
-        "Customer Satisfaction": [random.randint(80, 100) for _ in months],
-        "Product Uptime": [random.randint(95, 100) for _ in months],
-        "Bug Fix Rate": [random.randint(85, 100) for _ in months],
-        "Tickets Resolved": [random.randint(50, 200) for _ in months]
-    })
+    # Build chart_titles dynamically from session actions, messages, and dataframe names/columns
+    chart_titles = []
 
-    # ===== Filters =====
-    st.subheader("🔎 Filters")
-    col1, col2 = st.columns(2)
+    # 1) from previously created actions (chart_title field)
+    for act in st.session_state.get("actions", []):
+        ct = act.get("chart_title")
+        if ct:
+            chart_titles.append(ct)
 
-    with col1:
-        selected_product = st.selectbox(
-            "Select Product",
-            ["All"] + sorted(df_kpi["Product"].unique().tolist())
-        )
+    # 2) from recent assistant messages that attached charts (if they include a 'chart_title')
+    for m in st.session_state.get("messages", []):
+        if m.get("role") == "assistant" and m.get("chart") and m.get("id"):
+            # if the message stored a title earlier
+            ct = m.get("chart_title")
+            if ct:
+                chart_titles.append(ct)
 
-    with col2:
-        selected_month = st.selectbox(
-            "Select Period (Month)",
-            ["All"] + df_kpi["Month"].unique().tolist()
-        )
+    # 3) from dataframes: add dataframe names and a couple of numeric columns
+    try:
+        for name, df in list(dataframes.items())[:8]:
+            chart_titles.append(name)
+            num_cols = df.select_dtypes(include=["number"]).columns.tolist()
+            for c in num_cols[:2]:
+                chart_titles.append(f"{name} - {c}")
+    except Exception:
+        # if dataframes unavailable or malformed, skip
+        pass
 
-    # Apply filters
-    df_filtered = df_kpi.copy()
-    if selected_product != "All":
-        df_filtered = df_filtered[df_filtered["Product"] == selected_product]
-    if selected_month != "All":
-        df_filtered = df_filtered[df_filtered["Month"] == selected_month]
+    # unique and limit
+    chart_titles = [t for t in dict.fromkeys(chart_titles) if t]
+    if not chart_titles:
+        chart_titles = ["Dashboard"]
 
-    # ===== Gauges (2 per row) =====
-    st.subheader("📊 KPI Gauges")
-    chart_titles = []  # store all chart names
-
-    g1, g2 = st.columns(2)
-    with g1:
-        title = "Customer Satisfaction %"
-        fig = go.Figure(go.Indicator(
-            mode="gauge+number",
-            value=df_filtered["Customer Satisfaction"].mean(),
-            title={'text': title},
-            gauge={'axis': {'range': [0, 100]}}
-        ))
-        st.plotly_chart(fig, use_container_width=True)
-        chart_titles.append(title)
-    with g2:
-        title = "Product Uptime %"
-        fig = go.Figure(go.Indicator(
-            mode="gauge+number",
-            value=df_filtered["Product Uptime"].mean(),
-            title={'text': title},
-            gauge={'axis': {'range': [0, 100]}}
-        ))
-        st.plotly_chart(fig, use_container_width=True)
-        chart_titles.append(title)
-
-    # ===== Charts (2 per row) =====
-    st.subheader("📈 KPI Charts")
-
-    charts = [
-        ("Monthly Revenue Trend", px.line(df_filtered, x="Month", y="Revenue", markers=True,
-                                          title="Monthly Revenue Trend")),
-        ("Customer Satisfaction by Month", px.bar(df_filtered, x="Month", y="Customer Satisfaction",
-                                                 text="Customer Satisfaction", title="Customer Satisfaction by Month")),
-        ("Product Uptime Trend", px.line(df_filtered, x="Month", y="Product Uptime", markers=True,
-                                         title="Product Uptime Trend")),
-        ("Bug Fix Rate by Month", px.bar(df_filtered, x="Month", y="Bug Fix Rate", text="Bug Fix Rate",
-                                         title="Bug Fix Rate by Month")),
-        ("Tickets Resolved Trend", px.line(df_filtered, x="Month", y="Tickets Resolved", markers=True,
-                                           title="Tickets Resolved Trend")),
-        ("Revenue vs Satisfaction vs Tickets", px.scatter(
-            df_filtered, x="Revenue", y="Customer Satisfaction",
-            size="Tickets Resolved", color="Month",
-            title="Revenue vs Satisfaction vs Tickets"
-        ))
-    ]
-
-    # store all chart titles
-    for t, _ in charts:
-        chart_titles.append(t)
-
-    for i in range(0, len(charts), 2):
-        a, b = st.columns(2)
-        with a:
-            st.plotly_chart(charts[i][1], use_container_width=True)
-        if i + 1 < len(charts):
-            with b:
-                st.plotly_chart(charts[i + 1][1], use_container_width=True)
-
-    # ===== Assign Form (at bottom) =====
     # ===== Assign Form (at bottom) =====
     st.markdown("---")
     st.subheader("📤 Assign action item")
 
     with st.form("assign_dashboard_form", clear_on_submit=True):   # ✅ clears after submit
-        to = st.text_input("Assign to (email or name)")
-        due = st.date_input("Due Date", min_value=date.today())
-        chart_choice = st.selectbox("Select Chart/Gauge", chart_titles)
-        priority = st.selectbox("Priority", ["Low", "Medium", "High"], index=1)  # ✅ new
-        msg = st.text_area("Message", "Hi, Check this data and take necessary action.")
+        to = st.text_input("Assign to (email or name)", key="assign_to_dashboard")
+        due = st.date_input("Due Date", min_value=date.today(), key="due_dashboard")
+        chart_choice = st.selectbox("Select Chart/Gauge", chart_titles, key="chart_choice_assign")
+        priority = st.selectbox("Priority", ["Low", "Medium", "High"], index=1, key="priority_assign_dashboard")
+        msg = st.text_area("Message", "Hi, Check this data and take necessary action.", key="msg_dashboard")
         submitted = st.form_submit_button("✅ Confirm Assign")
 
         if submitted:
@@ -492,7 +1077,7 @@ elif page == "📊 KPI Dashboard":
                 "id": str(uuid.uuid4())[:6],
                 "to": to,
                 "due": str(due),
-                "priority": priority,   # ✅ added
+                "priority": priority,
                 "msg": msg,
                 "answer": f"Review Dashboard KPI: {chart_choice}",
                 "chart_title": chart_choice,
@@ -519,9 +1104,9 @@ elif page == "✅ Action Item Tracker":
     # Filters
     st.subheader("🔎 Filters")
     f1, f2, f3 = st.columns(3)
-    filter_priority = f1.selectbox("Priority", ["All", "Low", "Medium", "High"])
-    filter_status = f2.selectbox("Status", ["All", "Assigned", "Work in Progress", "Done"])
-    filter_id = f3.text_input("Search by ID (partial allowed)")
+    filter_priority = f1.selectbox("Priority", ["All", "Low", "Medium", "High"], key="filter_priority_actions")
+    filter_status = f2.selectbox("Status", ["All", "Assigned", "Work in Progress", "Done"], key="filter_status_actions")
+    filter_id = f3.text_input("Search by ID (partial allowed)", key="filter_id_actions")
 
     # Apply filters
     filtered_actions = []
@@ -547,29 +1132,35 @@ elif page == "✅ Action Item Tracker":
         header[5].markdown("💬 Message")
         header[6].markdown("🗑")
 
-        for i, act in enumerate(filtered_actions):
+        # Use stable keys based on action id to avoid shifting keys when list changes
+        for act in filtered_actions:
+            aid = act.get("id")
             cols = st.columns([1, 2, 2, 2, 2, 3, 1])
 
             # ID
-            cols[0].write(act["id"][:6])
+            cols[0].write(aid[:6])
 
             # To / Due Date
             cols[1].write(act["to"])
             cols[2].write(act["due"])
 
-            # Priority selector
+            # Priority selector (stable key)
+            priority_key = f"priority_{aid}"
+            status_key = f"status_{aid}"
+            delete_key = f"delete_{aid}"
+
             new_priority = cols[3].selectbox(
                 "", ["Low", "Medium", "High"],
                 index=["Low", "Medium", "High"].index(act.get("priority", "Medium")),
-                key=f"priority_{i}",
+                key=priority_key,
                 label_visibility="collapsed"
             )
 
-            # Status selector
+            # Status selector (stable key)
             new_status = cols[4].selectbox(
                 "", ["Assigned", "Work in Progress", "Done"],
                 index=["Assigned", "Work in Progress", "Done"].index(act.get("status", "Assigned")),
-                key=f"status_{i}",
+                key=status_key,
                 label_visibility="collapsed"
             )
 
@@ -584,9 +1175,13 @@ elif page == "✅ Action Item Tracker":
             else:
                 cols[5].write(act["msg"])
 
-            # Delete
-            if cols[6].button("🗑", key=f"delete_{i}"):
-                st.session_state.actions.remove(act)
+            # Delete (stable key)
+            if cols[6].button("🗑", key=delete_key):
+                # find and remove the exact action by id from the master session list
+                for sact in list(st.session_state.actions):
+                    if sact.get("id") == aid:
+                        st.session_state.actions.remove(sact)
+                        break
                 st.rerun()
 
         # 🔥 Now recalc KPIs AFTER updates
@@ -665,8 +1260,8 @@ elif page == "🔔 Smart Alerts":
     if "test_alert" in st.session_state:
         st.markdown("### 📧 Configure Notification")
         with st.form("confirm_alert_form", clear_on_submit=True):
-            emails = st.text_input("Send to (comma separated emails)")
-            message = st.text_area("Custom Message", f"Alert Triggered: {st.session_state.test_alert['query']}")
+            emails = st.text_input("Send to (comma separated emails)", key="alert_emails")
+            message = st.text_area("Custom Message", f"Alert Triggered: {st.session_state.test_alert['query']}", key="alert_custom_message")
             submitted = st.form_submit_button("✅ Confirm & Create Alert")
 
             if submitted:

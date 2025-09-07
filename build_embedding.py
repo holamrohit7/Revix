@@ -7,7 +7,7 @@ import pandas as pd
 import faiss
 from sentence_transformers import SentenceTransformer
 
-DATA_FOLDER = r"C:\Users\harsh\Desktop\Project\excel"
+DATA_FOLDER = "D:\Dev_space\Dev1\Revix\excel"
 CACHE_FILE = os.path.join(DATA_FOLDER, "faiss_index.pkl")
 DF_FILE = os.path.join(DATA_FOLDER, "dataframes.pkl")
 
