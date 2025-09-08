@@ -106,11 +106,98 @@ st.set_page_config(page_title="Revix Analytics", page_icon="🤖", layout="wide"
 # ------------------------
 # Sidebar Navigation
 # ------------------------
-st.sidebar.header("⚙ Navigation")
-page = st.sidebar.radio(
-    "Go to",
-    ["📊 KPI Dashboard", "💬 Chat", "✅ Action Item Tracker", "🔔 Smart Alerts"]  # 👈 Dashboard comes first now
-)
+with st.sidebar:
+    # Professional Header with Enhanced Styling
+    st.markdown("""
+        <div style='padding: 1.2rem; background: linear-gradient(135deg, #1e293b, #0f172a); 
+             border-radius: 12px; margin-bottom: 1.5rem; text-align: center; 
+             box-shadow: 0 4px 12px rgba(2,6,23,0.15)'>
+            <h2 style='margin:0; color: #ffffff; font-size: 1.6rem; font-weight: 600;
+                      text-shadow: 0 2px 4px rgba(0,0,0,0.1);'>
+                🤖 Revix Analytics
+            </h2>
+            <p style='margin:6px 0 0 0; color: #94a3b8; font-size: 0.95rem;
+                     letter-spacing: 0.5px;'>
+                AI-Powered Analytics
+            </p>
+        </div>
+    """, unsafe_allow_html=True)
+    
+    # Enhanced Navigation Menu
+    st.markdown("""
+        <style>
+            div[data-testid="stRadio"] > label {
+                font-weight: 600;
+                color: #1e293b;
+                font-size: 1.05rem;
+                padding: 0.3rem 0;
+            }
+            div[data-testid="stRadio"] > div[role="radiogroup"] > label {
+                padding: 0.6rem;
+                border-radius: 8px;
+                transition: all 0.2s;
+            }
+            div[data-testid="stRadio"] > div[role="radiogroup"] > label:hover {
+                background: #f1f5f9;
+            }
+        </style>
+    """, unsafe_allow_html=True)
+    
+    selected_page = st.radio(
+        "Navigation",
+        ["📊 KPI Dashboard", "💬 Chat", "✅ Action Item Tracker", "🔔 Smart Alerts"],
+        label_visibility="collapsed"
+    )
+    
+    # Enhanced Dashboard Settings
+    if selected_page == "📊 KPI Dashboard":
+        st.divider()
+        with st.expander("⚙️ Dashboard Settings", expanded=True):
+            st.markdown("""
+                <style>
+                    div[data-testid="stExpander"] {
+                        border: none;
+                        box-shadow: 0 2px 8px rgba(2,6,23,0.08);
+                        border-radius: 8px;
+                    }
+                </style>
+            """, unsafe_allow_html=True)
+            
+            # KPI Dashboard submenu with session state
+            st.markdown("##### 📊 Display Options")
+            if 'show_kpi_charts' not in st.session_state:
+                st.session_state.show_kpi_charts = True
+            if 'show_debug' not in st.session_state:
+                st.session_state.show_debug = False
+                
+            st.session_state.show_kpi_charts = st.checkbox("📈 Show KPI Charts", 
+                value=st.session_state.show_kpi_charts,
+                help="Toggle visibility of performance charts below the KPI gauges")
+            
+            st.markdown("##### 🛠️ Advanced")
+            st.session_state.show_debug = st.checkbox("🔍 Debug Mode",
+                value=st.session_state.show_debug,
+                help="Show additional debugging information")
+    
+    st.divider()
+    
+    # Enhanced Help/Support footer
+    st.markdown("""
+        <div style='margin-top: 2rem; padding: 1rem; 
+             background: linear-gradient(180deg, #f8fafc, #f1f5f9);
+             border-radius: 8px; text-align: center;
+             box-shadow: 0 2px 6px rgba(2,6,23,0.05)'>
+            <p style='margin:0; font-size: 0.9rem; color: #475569; font-weight: 500;'>
+                Need help? 
+                <span style='color: #0ea5e9; text-decoration: underline; cursor: pointer;'>
+                    Contact support
+                </span>
+            </p>
+        </div>
+    """, unsafe_allow_html=True)
+
+# Set active page
+page = selected_page
 # ------------------------
 # Load API Key
 # ------------------------
@@ -261,7 +348,14 @@ if page == "📊 KPI Dashboard":
     bugfix_val = None
     tickets_val = None
 
-    if not combined.empty:
+    # When both filters are "All", show 100% values
+    if product == "All" and month == "All":
+        revenue_val = 150000  # Target revenue
+        health_val = 100     # Perfect satisfaction
+        uptime_val = 100     # Perfect uptime
+        bugfix_val = 100     # Perfect fix rate
+        tickets_val = 200    # Target tickets resolved
+    elif not combined.empty:
         # Revenue-like columns
         revenue_val = safe_sum_cols(combined, ['revenue', 'amount', 'price', 'sales'])
         # Health/CSAT like
@@ -392,23 +486,13 @@ if page == "📊 KPI Dashboard":
                         continue
 
     # Fallback static defaults when calculation not possible
-    # If both filters are 'All', show full (100%) KPIs as a high-level dashboard
-    if (product == 'All' or product is None) and (month == 'All' or month is None):
-        kpi_data = [
-            {"title": "Revenue", "value": 150000, "target": 150000, "color": "#10B981"},
-            {"title": "Customer Satisfaction", "value": 100.0, "target": 100, "color": "#3B82F6"},
-            {"title": "Product Uptime", "value": 100.0, "target": 100, "color": "#6366F1"},
-            {"title": "Bug Fix Rate", "value": 100.0, "target": 100, "color": "#F59E0B"},
-            {"title": "Tickets Resolved", "value": 200, "target": 200, "color": "#EF4444"}
-        ]
-    else:
-        kpi_data = [
-            {"title": "Revenue", "value": revenue_val if revenue_val is not None else "-", "target": 150000, "color": "#10B981"},
-            {"title": "Customer Satisfaction", "value": health_val if health_val is not None else "-", "target": 100, "color": "#3B82F6"},
-            {"title": "Product Uptime", "value": uptime_val if uptime_val is not None else "-", "target": 100, "color": "#6366F1"},
-            {"title": "Bug Fix Rate", "value": bugfix_val if bugfix_val is not None else "-", "target": 100, "color": "#F59E0B"},
-            {"title": "Tickets Resolved", "value": tickets_val if tickets_val is not None else "-", "target": 200, "color": "#EF4444"}
-        ]
+    kpi_data = [
+        {"title": "Revenue", "value": revenue_val if revenue_val is not None else "-", "target": 150000, "color": "#10B981"},
+        {"title": "Customer Satisfaction", "value": health_val if health_val is not None else "-", "target": 100, "color": "#3B82F6"},
+        {"title": "Product Uptime", "value": uptime_val if uptime_val is not None else "-", "target": 100, "color": "#6366F1"},
+        {"title": "Bug Fix Rate", "value": bugfix_val if bugfix_val is not None else "-", "target": 100, "color": "#F59E0B"},
+        {"title": "Tickets Resolved", "value": tickets_val if tickets_val is not None else "-", "target": 200, "color": "#EF4444"}
+    ]
 
     for col, kpi in zip(kpi_cols, kpi_data):
         with col:
@@ -440,11 +524,28 @@ if page == "📊 KPI Dashboard":
             st.plotly_chart(fig, use_container_width=True)
 
     # KPI Charts (reflect selection)
-    st.subheader("📈 KPI Charts")
-    chart_cols = st.columns(2)
+    # Handle data availability message
+    if combined.empty and selected_page == "📊 KPI Dashboard":
+        st.info('No data matches the selected Product/Month. Try selecting a different product or "All".')
+    
+    # Show charts section if enabled
+    if st.session_state.show_kpi_charts and selected_page == "📊 KPI Dashboard" and not combined.empty:
+        st.subheader("📈 KPI Charts")
+        
+        # Show debug info if enabled
+        if st.session_state.show_debug:
+            with st.expander("🔍 Debug Information", expanded=True):
+                st.write("Active Filters:")
+                st.json({
+                    "Product": product,
+                    "Month": month,
+                    "Data Rows": len(combined),
+                    "Available Metrics": [col for col in combined.columns]
+                })
 
-    # Build four KPI line charts from combined data if available
-    if not combined.empty:
+        # Create chart columns for layout
+        chart_cols = st.columns(2)
+        # Build four KPI line charts from combined data
         # ensure we have a datetime column
         time_cols = [c for c in combined.columns if 'date' in c.lower() or c.lower() == 'month']
         if time_cols:
@@ -455,8 +556,6 @@ if page == "📊 KPI Dashboard":
             if not ts.empty:
                 # normalize month bucket
                 ts['month'] = ts['_dt'].dt.to_period('M').dt.to_timestamp()
-                # human-friendly month label for x-axis (e.g., 'Mar 2025')
-                ts['month_label'] = ts['month'].dt.strftime('%b %Y')
 
                 # Monthly Revenue trend
                 rev_col = None
@@ -466,8 +565,7 @@ if page == "📊 KPI Dashboard":
                         break
                 if rev_col:
                     rev_trend = ts.groupby('month')[rev_col].sum().reset_index()
-                    rev_trend['month_label'] = rev_trend['month'].dt.strftime('%b %Y')
-                    fig_rev = px.line(rev_trend, x='month_label', y=rev_col, title='Monthly Revenue Trend')
+                    fig_rev = px.line(rev_trend, x='month', y=rev_col, title='Monthly Revenue Trend')
                     # single smooth trend line, no markers
                     fig_rev.update_traces(mode='lines', line=dict(width=3, color='#10B981'))
                     fig_rev.update_layout(yaxis_title='Revenue', xaxis_title='Month')
@@ -484,8 +582,7 @@ if page == "📊 KPI Dashboard":
                     if num_cols:
                         rev_col = num_cols[0]
                         rev_trend = ts.groupby('month')[rev_col].sum().reset_index()
-                        rev_trend['month_label'] = rev_trend['month'].dt.strftime('%b %Y')
-                        fig_rev = px.line(rev_trend, x='month_label', y=rev_col, title=f'Monthly Revenue Trend ({rev_col})')
+                        fig_rev = px.line(rev_trend, x='month', y=rev_col, title=f'Monthly Revenue Trend ({rev_col})')
                         fig_rev.update_traces(mode='lines', line=dict(width=3, color='#10B981'))
                         fig_rev.update_layout(plot_bgcolor='rgba(0,0,0,0)', paper_bgcolor='rgba(0,0,0,0)')
                         fig_rev.update_xaxes(showgrid=False)
@@ -512,13 +609,7 @@ if page == "📊 KPI Dashboard":
                             uptime_series = ts.groupby('month')[c].mean().reset_index().rename(columns={c: 'uptime'})
                             break
                 if uptime_series is not None:
-                    # ensure label exists
-                    if 'month' in uptime_series.columns and 'month_label' not in uptime_series.columns:
-                        try:
-                            uptime_series['month_label'] = uptime_series['month'].dt.strftime('%b %Y')
-                        except Exception:
-                            uptime_series['month_label'] = uptime_series['month'].astype(str)
-                    fig_up = px.line(uptime_series, x='month_label', y='uptime', title='Product Uptime Trend')
+                    fig_up = px.line(uptime_series, x='month', y='uptime', title='Product Uptime Trend')
                     fig_up.update_traces(mode='lines', line=dict(width=3, color='#6366F1'))
                     fig_up.update_layout(yaxis_title='Uptime (%)', xaxis_title='Month')
                     fig_up.update_layout(plot_bgcolor='rgba(0,0,0,0)', paper_bgcolor='rgba(0,0,0,0)')
@@ -538,8 +629,7 @@ if page == "📊 KPI Dashboard":
                         break
                 if csat_col:
                     csat_trend = ts.groupby('month')[csat_col].mean().reset_index()
-                    csat_trend['month_label'] = csat_trend['month'].dt.strftime('%b %Y')
-                    fig_cs = px.line(csat_trend, x='month_label', y=csat_col, title='Customer Satisfaction by Month')
+                    fig_cs = px.line(csat_trend, x='month', y=csat_col, title='Customer Satisfaction by Month')
                     fig_cs.update_traces(mode='lines', line=dict(width=3, color='#3B82F6'))
                     fig_cs.update_layout(yaxis_title='Satisfaction (score)', xaxis_title='Month')
                     fig_cs.update_layout(plot_bgcolor='rgba(0,0,0,0)', paper_bgcolor='rgba(0,0,0,0)')
@@ -560,8 +650,7 @@ if page == "📊 KPI Dashboard":
                     s['is_closed'] = s[sc].astype(str).str.lower().isin(['closed', 'resolved', 'done']).astype(int)
                     bug_trend = s.groupby('month')['is_closed'].mean().reset_index()
                     bug_trend['fix_rate'] = bug_trend['is_closed'] * 100.0
-                    bug_trend['month_label'] = bug_trend['month'].dt.strftime('%b %Y')
-                    fig_bug = px.line(bug_trend, x='month_label', y='fix_rate', title='Bug Fix Rate by Month')
+                    fig_bug = px.line(bug_trend, x='month', y='fix_rate', title='Bug Fix Rate by Month')
                     fig_bug.update_traces(mode='lines', line=dict(width=3, color='#F59E0B'))
                     fig_bug.update_layout(yaxis_title='Fix Rate (%)', xaxis_title='Month')
                     fig_bug.update_layout(plot_bgcolor='rgba(0,0,0,0)', paper_bgcolor='rgba(0,0,0,0)')
@@ -578,8 +667,7 @@ if page == "📊 KPI Dashboard":
                             break
                     if bug_col:
                         bug_trend = ts.groupby('month')[bug_col].mean().reset_index()
-                        bug_trend['month_label'] = bug_trend['month'].dt.strftime('%b %Y')
-                        fig_bug2 = px.line(bug_trend, x='month_label', y=bug_col, title='Bug Fix Rate by Month')
+                        fig_bug2 = px.line(bug_trend, x='month', y=bug_col, title='Bug Fix Rate by Month')
                         fig_bug2.update_traces(mode='lines', line=dict(width=3, color='#F59E0B'))
                         fig_bug2.update_layout(yaxis_title='Fix Rate', xaxis_title='Month')
                         fig_bug2.update_layout(plot_bgcolor='rgba(0,0,0,0)', paper_bgcolor='rgba(0,0,0,0)')
@@ -618,13 +706,7 @@ if page == "📊 KPI Dashboard":
                                 break
 
                 if tickets_trend is not None and not tickets_trend.empty:
-                    # ensure month_label
-                    if 'month' in tickets_trend.columns and 'month_label' not in tickets_trend.columns:
-                        try:
-                            tickets_trend['month_label'] = tickets_trend['month'].dt.strftime('%b %Y')
-                        except Exception:
-                            tickets_trend['month_label'] = tickets_trend['month'].astype(str)
-                    fig_tickets = px.bar(tickets_trend, x='month_label', y='tickets_resolved', title='Tickets Resolved by Month', color='tickets_resolved', color_continuous_scale=px.colors.sequential.Viridis)
+                    fig_tickets = px.bar(tickets_trend, x='month', y='tickets_resolved', title='Tickets Resolved by Month', color='tickets_resolved', color_continuous_scale=px.colors.sequential.Viridis)
                     fig_tickets.update_layout(yaxis_title='Tickets Resolved', xaxis_title='Month')
                     fig_tickets.update_layout(plot_bgcolor='rgba(0,0,0,0)', paper_bgcolor='rgba(0,0,0,0)')
                     fig_tickets.update_xaxes(showgrid=False)
@@ -655,20 +737,14 @@ if page == "📊 KPI Dashboard":
                 if combined_metrics:
                     # merge all on month
                     df_comb = pd.concat(combined_metrics, axis=1).reset_index()
-                    # human readable month label
-                    if 'month' in df_comb.columns and 'month_label' not in df_comb.columns:
-                        try:
-                            df_comb['month_label'] = df_comb['month'].dt.strftime('%b %Y')
-                        except Exception:
-                            df_comb['month_label'] = df_comb['month'].astype(str)
                     # normalize scales for plotting: revenue on secondary axis
                     fig_combo = go.Figure()
                     if 'revenue' in df_comb.columns:
-                        fig_combo.add_trace(go.Bar(x=df_comb['month_label'], y=df_comb['revenue'], name='Revenue', marker_color='#10B981', yaxis='y1', opacity=0.9))
+                        fig_combo.add_trace(go.Bar(x=df_comb['month'], y=df_comb['revenue'], name='Revenue', marker_color='#10B981', yaxis='y1', opacity=0.9))
                     if 'satisfaction' in df_comb.columns:
-                        fig_combo.add_trace(go.Scatter(x=df_comb['month_label'], y=df_comb['satisfaction'], name='Satisfaction', mode='lines', line=dict(color='#3B82F6', width=3), yaxis='y2'))
+                        fig_combo.add_trace(go.Scatter(x=df_comb['month'], y=df_comb['satisfaction'], name='Satisfaction', mode='lines', line=dict(color='#3B82F6', width=3), yaxis='y2'))
                     if 'tickets_resolved' in df_comb.columns:
-                        fig_combo.add_trace(go.Scatter(x=df_comb['month_label'], y=df_comb['tickets_resolved'], name='Tickets Resolved', mode='lines', line=dict(color='#6366F1', width=3, dash='dash'), yaxis='y2'))
+                        fig_combo.add_trace(go.Scatter(x=df_comb['month'], y=df_comb['tickets_resolved'], name='Tickets Resolved', mode='lines', line=dict(color='#6366F1', width=3, dash='dash'), yaxis='y2'))
 
                     # Layout with two y axes, transparent
                     fig_combo.update_layout(title='Revenue vs Satisfaction vs Tickets', xaxis=dict(title='Month', showgrid=False), yaxis=dict(title='Revenue', side='left', showgrid=False), yaxis2=dict(title='Score / Tickets', overlaying='y', side='right', showgrid=False))
@@ -681,8 +757,7 @@ if page == "📊 KPI Dashboard":
         else:
             chart_cols[0].info('No date/month column found for KPI charts.')
     else:
-        chart_cols[0].info('No data matches the selected Product/Month.')
-        chart_cols[1].info("Try selecting a different product or 'All'.")
+        st.info('No data matches the selected Product/Month. Try selecting a different product or "All".')
 
     # ------------------------
     # Load Cached DataFrames
