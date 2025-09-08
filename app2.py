@@ -13,19 +13,147 @@ from datetime import date
 import random
 import time
 
-# ------------------------
-# Setup
-# ------------------------
-st.set_page_config(page_title="Revix Chatbot", page_icon="🤖", layout="wide")
+# # ------------------------
+# # Setup
+# # ------------------------
+# st.set_page_config(page_title="Revix Chatbot", page_icon="🤖", layout="wide")
+
+# # ------------------------
+# # Sidebar Navigation
+# # ------------------------
+# st.sidebar.header("⚙ Navigation")
+# page = st.sidebar.radio(
+#     "Go to",
+#     ["📊 KPI Dashboard", "💬 Chat", "✅ Action Item Tracker", "🔔 Smart Alerts"]
+# )
 
 # ------------------------
-# Sidebar Navigation
+# Sidebar with Logo at Top (no extra space above)
 # ------------------------
-st.sidebar.header("⚙ Navigation")
-page = st.sidebar.radio(
-    "Go to",
-    ["📊 KPI Dashboard", "💬 Chat", "✅ Action Item Tracker", "🔔 Smart Alerts"]
+st.markdown(
+    """
+    <style>
+    /* remove the default top padding/space in sidebar */
+    section[data-testid="stSidebar"] > div:first-child {
+        padding-top: 0rem;
+    }
+    .logo-card {
+        text-align: center;
+        padding: 10px 5px 20px 5px;
+    }
+    .logo-title {
+        font-size: 16px;
+        font-weight: 800;
+        color: #FFFFFF;
+        margin-top: 8px;
+        margin-bottom: 2px;
+    }
+    .logo-sub {
+        font-size: 14px;
+        font-weight: 400;
+        color: #AFC6D9;
+        margin: 0;
+    }
+    .nav-section h3 {
+        font-size: 15px;
+        margin-bottom: 6px;
+        color: #FFFFFF;
+    }
+    </style>
+    """,
+    unsafe_allow_html=True,
 )
+
+with st.sidebar:
+    # --- Logo card ---
+    st.markdown('<div class="logo-card">', unsafe_allow_html=True)
+    st.image("Images/logo.jpg", use_container_width=True)  # 👈 adjust width if needed
+    st.markdown("<div class='logo-title'>Revolutionize Data & Execute Precisely</div>", unsafe_allow_html=True)
+    st.markdown("<div class='logo-sub'>AI-Powered Analytics</div>", unsafe_allow_html=True)
+    st.markdown('</div>', unsafe_allow_html=True)
+
+    # --- Navigation ---
+    st.markdown('<div class="nav-section">', unsafe_allow_html=True)
+    st.markdown("### ⚙ Navigation", unsafe_allow_html=True)
+    page = st.radio(
+        "",
+        ["📊 KPI Dashboard", "💬 Chat", "✅ Action Item Tracker", "🔔 Smart Alerts"],
+        index=0,
+        key="main_nav",
+    )
+    st.markdown('</div>', unsafe_allow_html=True)
+
+
+# --- Account section (clean, no avatar) ---
+st.markdown(
+    """
+    <style>
+
+    .account-card {
+        margin-top: auto;
+        background: linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.01));
+        border-radius: 12px;
+        padding: 14px 16px;
+        margin: 12px 8px 0px 8px;   /* 👈 set bottom margin = 0 */
+        color: #E6EEF3;
+        box-shadow: 0 2px 8px rgba(2,6,18,0.6);
+    }
+        
+    .acct-name {
+        font-size:15px;
+        font-weight:700;
+        margin:0 0 4px 0;
+        color:#ffffff;
+    }
+    .acct-email {
+        font-size:13px;
+        color:#9fb2c8;
+        margin:0;
+    }
+    .acct-role {
+        font-size:12px;
+        color:#9fb2c8;
+        margin:4px 0 10px 0;
+    }
+    .acct-actions {
+        display:flex;
+        gap:10px;
+    }
+    .acct-btn {
+        background:#1a2538;
+        border:1px solid rgba(255,255,255,0.08);
+        color:#cfe6ff;
+        padding:6px 12px;
+        border-radius:8px;
+        font-size:12px;
+        cursor:pointer;
+        transition: all 0.2s ease;
+    }
+    .acct-btn:hover {
+        background:#22314a;
+        border-color: rgba(255,255,255,0.2);
+    }
+    </style>
+    """,
+    unsafe_allow_html=True,
+)
+
+with st.sidebar:
+    st.markdown(
+        """
+        <div class="account-card">
+            <p class="acct-name">John Cena</p>
+            <p class="acct-email">John@revix.com</p>
+            <p class="acct-role">VP Sales</p>
+            <div class="acct-actions">
+                <button class="acct-btn">Manage</button>
+                <button class="acct-btn">Sign out</button>
+            </div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
 
 # ------------------------
 # Load API Key
@@ -40,7 +168,7 @@ client = Groq(api_key=GROQ_API_KEY)
 # ------------------------
 # Load Cached DataFrames
 # ------------------------
-DATA_FOLDER = os.path.join(os.path.dirname(__file__), "excel")
+DATA_FOLDER = os.path.join(os.path.dirname(_file_), "excel")
 DF_FILE = os.path.join(DATA_FOLDER, "dataframes.pkl")
 
 if not os.path.exists(DF_FILE):
@@ -202,16 +330,16 @@ def demo_investigation_response():
 def demo_customer_health_report_text():
     # Multi-line text used in chat; we'll also create structured displays below
     return (
-        "**Customer Health Report — Alpha Solutions Inc.**\n\n"
-        "- **Status:** HIGH churn risk\n"
-        "- **ACV:** $250,000\n"
-        "- **MRR:** $20,800\n"
-        "- **Renewal:** In 60 days\n"
-        "- **Renewal probability:** 40% (down from 70% last quarter)\n"
-        "- **Benchmark:** Usage ~60% below peers of similar size\n"
-        "- **Primary issues:** API integration failures & reduced feature adoption\n"
-        "- **Support:** 18 tickets in last 30 days (majority tagged API issues)\n"
-        "- **Sentiment:** Shift from 'Satisfied' → 'Frustrated'\n\n"
+        "Customer Health Report — Alpha Solutions Inc.\n\n"
+        "- Status: HIGH churn risk\n"
+        "- ACV: $250,000\n"
+        "- MRR: $20,800\n"
+        "- Renewal: In 60 days\n"
+        "- Renewal probability: 40% (down from 70% last quarter)\n"
+        "- Benchmark: Usage ~60% below peers of similar size\n"
+        "- Primary issues: API integration failures & reduced feature adoption\n"
+        "- Support: 18 tickets in last 30 days (majority tagged API issues)\n"
+        "- Sentiment: Shift from 'Satisfied' → 'Frustrated'\n\n"
         "Key recommendation: immediate cross-functional rescue — product to triage API errors, CSM to run an executive call, sales to align on retention plan."
     )
 
@@ -391,54 +519,294 @@ if page == "💬 Chat":
 elif page == "📊 KPI Dashboard":
     st.title("📊 KPI Dashboard")
 
-    # Hardcoded / simulated KPI data
-    csat_score = 4.3  # out of 5
-    uptime_score = 91  # percent
+    # ----- Sample Data -----
+    random.seed(42)
+    months = pd.date_range(start="2025-01-01", periods=12, freq="M")
+    df_kpi = pd.DataFrame({
+        "Month": months.strftime("%b"),
+        "Product": [random.choice(["FNA", "FNB", "FNC"]) for _ in months],
+        "Revenue": [random.randint(50000, 150000) for _ in months],
+        "Customer Satisfaction": [random.randint(80, 100) for _ in months],
+        "Product Uptime": [random.randint(95, 100) for _ in months],
+        "Bug Fix Rate": [random.randint(85, 100) for _ in months],
+        "Tickets Resolved": [random.randint(50, 200) for _ in months]
+    })
 
-    # MRR history (6 months) + 3-month forecast (we'll show 6 months actual)
-    months_short = pd.date_range(end=pd.Timestamp.today().normalize() - pd.Timedelta(days=30), periods=6, freq='M').strftime('%b %Y').tolist()
-    # realistic numbers between 100k - 130k starting around 120k trending down
-    mrr_vals = [125000, 123000, 121000, 118000, 113000, 105000]  # last 6 months
-    # product usage (DAU), 10% drop last month compared to previous
-    usage_vals = [1100, 1080, 1060, 1030, 1000, 900]  # last is ~10% drop vs prior
-    # support tickets last 6 months - last month higher
-    tickets_vals = [25, 22, 28, 30, 27, 45]
+    # ===== Filters =====
+    st.subheader("🔎 Filters")
+    col1, col2 = st.columns(2)
 
-    # Top KPI row
-    k1, k2, k3, k4 = st.columns([1,1,2,2])
-    with k1:
-        st.markdown("**CSAT**")
-        st.metric(label="", value=f"{csat_score} / 5")
-    with k2:
-        st.markdown("**Uptime**")
-        # uptime gauge using indicator
-        fig_uptime = go.Figure(go.Indicator(
-            mode="gauge+number",
-            value=uptime_score,
-            title={'text': "Uptime %"},
-            gauge={'axis': {'range': [0, 100]}}
+    with col1:
+        selected_product = st.selectbox(
+            "Select Product",
+            ["All"] + sorted(df_kpi["Product"].unique().tolist())
+        )
+
+    with col2:
+        selected_month = st.selectbox(
+            "Select Period (Month)",
+            ["All"] + df_kpi["Month"].unique().tolist()
+        )
+
+    # Apply filters
+    df_filtered = df_kpi.copy()
+    if selected_product != "All":
+        df_filtered = df_filtered[df_filtered["Product"] == selected_product]
+    if selected_month != "All":
+        df_filtered = df_filtered[df_filtered["Month"] == selected_month]
+    
+    # ===== Gauges (3 fixed KPIs in one row) =====
+    st.subheader("📊 KPI Gauges")
+    chart_titles = []  # keep collecting titles for the assign form
+
+    # --- Fixed values you provided (no randomness / no dataframe dependence) ---
+    # Revenue: show in thousands with $ prefix
+    revenue_val_raw = 125000
+    revenue_display_val = int(revenue_val_raw / 1000)           # 125
+    revenue_target_raw = 130000
+    revenue_target_display = int(revenue_target_raw / 1000)     # 130
+
+    # Customer Satisfaction: 0-5 scale
+    csat_val = 4.2
+    csat_target = 4.4
+
+    # Product Uptime: percent scale
+    uptime_val = 95.0
+    uptime_target = 99.0
+
+    col_r, col_c, col_u = st.columns(3)
+
+    with col_r:
+        title = "Revenue"
+        fig_rev = go.Figure(go.Indicator(
+            mode="gauge+number+delta",
+            value=revenue_display_val,
+            title={'text': title},
+            delta={'reference': revenue_target_display, 'relative': False, 'position': "bottom", 'valueformat': ",d"},
+            number={'prefix': "$", 'suffix': "k", 'valueformat': ",d"},
+            gauge={
+                'axis': {'range': [0, max(revenue_target_display, revenue_display_val) * 1.2]},
+                'bar': {'thickness': 0.25},
+                'steps': [
+                    {'range': [0, revenue_target_display * 0.6], 'color': "rgba(200,200,200,0.15)"},
+                    {'range': [revenue_target_display * 0.6, revenue_target_display], 'color': "rgba(0,200,120,0.12)"}
+                ],
+                'threshold': {
+                    'line': {'color': "red", 'width': 4},
+                    'thickness': 0.75,
+                    'value': revenue_target_display
+                }
+            }
         ))
-        fig_uptime.update_layout(height=180, margin=dict(l=10, r=10, t=30, b=10))
+        fig_rev.update_layout(height=240, margin=dict(l=6, r=6, t=24, b=6))
+        st.plotly_chart(fig_rev, use_container_width=True)
+        chart_titles.append(title)
+
+    with col_c:
+        title = "Customer Satisfaction"
+        fig_csat = go.Figure(go.Indicator(
+            mode="gauge+number+delta",
+            value=round(csat_val, 1),
+            title={'text': title},
+            delta={'reference': round(csat_target, 1), 'relative': False, 'position': "bottom", 'valueformat': ".1f"},
+            number={'valueformat': ".1f"},
+            gauge={
+                'axis': {'range': [0, 5]},
+                'bar': {'thickness': 0.25},
+                'steps': [
+                    {'range': [0, 3], 'color': "rgba(200,200,200,0.15)"},
+                    {'range': [3, 4.5], 'color': "rgba(255,200,0,0.12)"},
+                    {'range': [4.5, 5], 'color': "rgba(0,200,120,0.12)"}
+                ],
+                'threshold': {
+                    'line': {'color': "red", 'width': 3},
+                    'thickness': 0.75,
+                    'value': round(csat_target, 1)
+                }
+            }
+        ))
+        fig_csat.update_layout(height=240, margin=dict(l=6, r=6, t=24, b=6))
+        st.plotly_chart(fig_csat, use_container_width=True)
+        chart_titles.append(title)
+
+    with col_u:
+        title = "Product Uptime"
+        fig_uptime = go.Figure(go.Indicator(
+            mode="gauge+number+delta",
+            value=round(uptime_val, 1),
+            title={'text': title},
+            delta={'reference': round(uptime_target, 1), 'relative': False, 'position': "bottom", 'valueformat': ".1f"},
+            number={'suffix': " %", 'valueformat': ".1f"},
+            gauge={
+                'axis': {'range': [0, 100]},
+                'bar': {'thickness': 0.25},
+                'steps': [
+                    {'range': [0, 95], 'color': "rgba(240,120,120,0.12)"},    # red-ish below 95
+                    {'range': [95, 99], 'color': "rgba(255,200,0,0.12)"},     # yellow 95-99
+                    {'range': [99, 100], 'color': "rgba(0,200,120,0.12)"}     # green >=99
+                ],
+                'threshold': {
+                    'line': {'color': "red", 'width': 4},
+                    'thickness': 0.75,
+                    'value': round(uptime_target, 1)
+                }
+            }
+        ))
+        fig_uptime.update_layout(height=240, margin=dict(l=6, r=6, t=24, b=6))
         st.plotly_chart(fig_uptime, use_container_width=True)
-    with k3:
-        st.markdown("**MRR (6 months)**")
-        fig_mrr = px.line(x=months_short, y=mrr_vals, markers=True, labels={"x":"Month","y":"MRR ($)"})
-        fig_mrr.update_layout(margin=dict(l=6, r=6, t=30, b=10))
+        chart_titles.append(title)
+
+
+    # ===== Charts (2 per row) =====
+    # charts = [
+    #     ("Monthly Revenue Trend", px.line(df_filtered, x="Month", y="Revenue", markers=True,
+    #                                       title="Monthly Revenue Trend")),
+    #     ("Customer Satisfaction by Month", px.bar(df_filtered, x="Month", y="Customer Satisfaction",
+    #                                              text="Customer Satisfaction", title="Customer Satisfaction by Month")),
+    #     ("Product Uptime Trend", px.line(df_filtered, x="Month", y="Product Uptime", markers=True,
+    #                                      title="Product Uptime Trend")),
+    #     ("Bug Fix Rate by Month", px.bar(df_filtered, x="Month", y="Bug Fix Rate", text="Bug Fix Rate",
+    #                                      title="Bug Fix Rate by Month")),
+    #     ("Tickets Resolved Trend", px.line(df_filtered, x="Month", y="Tickets Resolved", markers=True,
+    #                                        title="Tickets Resolved Trend")),
+    #     ("Revenue vs Satisfaction vs Tickets", px.scatter(
+    #         df_filtered, x="Revenue", y="Customer Satisfaction",
+    #         size="Tickets Resolved", color="Month",
+    #         title="Revenue vs Satisfaction vs Tickets"
+    #     ))
+    # ]
+
+    # # store all chart titles
+    # for t, _ in charts:
+    #     chart_titles.append(t)
+
+    # for i in range(0, len(charts), 2):
+    #     a, b = st.columns(2)
+    #     with a:
+    #         st.plotly_chart(charts[i][1], use_container_width=True)
+    #     if i + 1 < len(charts):
+    #         with b:
+    #             st.plotly_chart(charts[i + 1][1], use_container_width=True)
+    
+    # ===== Four KPI Charts (2x2 layout, tighter y-axes, product usage as line) =====
+    st.subheader("📈 KPI Charts")
+    chart_titles = chart_titles if 'chart_titles' in locals() else []  # preserve existing list
+
+    # --- Prepare month labels (6 months + 3-month projection for MRR) ---
+    months_6 = pd.date_range(end=pd.Timestamp.today().normalize() - pd.Timedelta(days=30), periods=6, freq='M').strftime('%b %Y').tolist()
+    months_9 = pd.date_range(end=pd.Timestamp.today().normalize() - pd.Timedelta(days=30), periods=9, freq='M').strftime('%b %Y').tolist()
+
+    # --- Data (exact values you provided) ---
+    mrr_hist = [115000, 116000, 117000, 119000, 121000, 125000]   # last 6 months
+    mrr_proj = [122000, 121000, 120000]                            # next 3 months
+    mrr_vals = mrr_hist + mrr_proj
+
+    usage_vals = [1100, 1150, 1200, 1210, 1150, 1100]
+    tickets_vals = [55, 56, 53, 60, 63, 65]
+    uptime_vals = [97, 98, 99, 98, 97, 95]
+
+    # --- helper to compute nice y-range with padding ---
+    def padded_range(vals, pad_frac=0.18, floor=None, ceiling=None):
+        ymin = min(vals)
+        ymax = max(vals)
+        span = ymax - ymin
+        if span == 0:
+            span = max(1, abs(ymax) * 0.05)
+        pad = span * pad_frac
+        lower = ymin - pad
+        upper = ymax + pad
+        if floor is not None:
+            lower = max(lower, floor)
+        if ceiling is not None:
+            upper = min(upper, ceiling)
+        return [lower, upper]
+
+    # Build a 2x2 layout
+    row1_col1, row1_col2 = st.columns(2)
+    row2_col1, row2_col2 = st.columns(2)
+
+    # ===== 1) MRR (row1_col1) - line with projection (solid history, dashed projection) =====
+    with row1_col1:
+        fig_mrr = go.Figure()
+        # historical
+        fig_mrr.add_trace(go.Scatter(x=months_9[:6], y=mrr_hist, mode='lines+markers', name='Historical MRR', line=dict(width=3)))
+        # projection (start from last historical point for continuity)
+        proj_x = months_9[5:]  # last historical month + next 3
+        proj_y = [mrr_hist[-1]] + mrr_proj
+        fig_mrr.add_trace(go.Scatter(x=proj_x, y=proj_y, mode='lines+markers', name='Projection', line=dict(dash='dash', width=2)))
+        # highlight latest historical point
+        fig_mrr.add_trace(go.Scatter(x=[months_9[5]], y=[mrr_hist[-1]], mode='markers+text', name='Latest', text=["Latest"], textposition="top center", marker=dict(size=10)))
+        yrange_mrr = padded_range(mrr_vals, pad_frac=0.10, floor=0)
+        fig_mrr.update_layout(title="MRR — Last 6 months + 3-month Projection", xaxis_title="Month", yaxis_title="MRR ($)",
+                            yaxis=dict(range=yrange_mrr, tickformat=",d"), margin=dict(l=6, r=6, t=36, b=10), height=340)
         st.plotly_chart(fig_mrr, use_container_width=True)
-    with k4:
-        st.markdown("**Product Usage (DAU)**")
-        fig_usage = px.bar(x=months_short, y=usage_vals, labels={"x":"Month","y":"DAU"})
-        fig_usage.update_layout(margin=dict(l=6, r=6, t=30, b=10))
+        chart_titles.append("MRR — Last 6 months + 3-month Projection")
+
+    # ===== 2) Product Usage Report (row1_col2) - line chart =====
+    with row1_col2:
+        fig_usage = go.Figure()
+        fig_usage.add_trace(go.Scatter(x=months_6, y=usage_vals, mode='lines+markers', name='DAU', line=dict(width=3)))
+        yrange_usage = padded_range(usage_vals, pad_frac=0.14, floor=0)
+        fig_usage.update_layout(title="Product Usage (Last 6 Months)", xaxis_title="Month", yaxis_title="Daily Active Users",
+                                yaxis=dict(range=yrange_usage), margin=dict(l=6, r=6, t=36, b=10), height=340)
         st.plotly_chart(fig_usage, use_container_width=True)
+        chart_titles.append("Product Usage (Last 6 Months)")
 
-    # Support tickets (separate row)
-    st.markdown("**Support Tickets (last 6 months)**")
-    fig_tickets = px.bar(x=months_short, y=tickets_vals, labels={"x":"Month","y":"Tickets"})
-    fig_tickets.update_layout(margin=dict(l=6, r=6, t=30, b=10))
-    st.plotly_chart(fig_tickets, use_container_width=True)
+    # ===== 3) Support Tickets Raised (row2_col1) - bar + trend line =====
+    with row2_col1:
+        fig_tickets = go.Figure()
+        fig_tickets.add_trace(go.Bar(x=months_6, y=tickets_vals, name='Tickets', marker_line_width=0))
+        # 3-month rolling average trend line for clarity
+        trend_y = pd.Series(tickets_vals).rolling(3, min_periods=1).mean().tolist()
+        fig_tickets.add_trace(go.Scatter(x=months_6, y=trend_y, mode='lines', name='3-mo MA', line=dict(width=2)))
+        yrange_tickets = padded_range(tickets_vals, pad_frac=0.18, floor=0)
+        fig_tickets.update_layout(title="Support Tickets Raised (Last 6 Months)", xaxis_title="Month", yaxis_title="Tickets",
+                                yaxis=dict(range=yrange_tickets), margin=dict(l=6, r=6, t=36, b=10), height=340)
+        st.plotly_chart(fig_tickets, use_container_width=True)
+        chart_titles.append("Support Tickets Raised (Last 6 Months)")
 
-    # Small note and action creation hint
-    st.info("Sarah notices uptime drop and creates an action item for the SRE Head to investigate uptime decrease.")
+    # ===== 4) Product Uptime (row2_col2) - area/line with tight y-axis =====
+    with row2_col2:
+        fig_uptime = go.Figure()
+        fig_uptime.add_trace(go.Scatter(x=months_6, y=uptime_vals, mode='lines+markers', fill='tozeroy', name='Uptime', line=dict(width=2)))
+        # keep y-axis tight around the values but within 0-100
+        yrange_uptime = padded_range(uptime_vals, pad_frac=0.06, floor=90, ceiling=100)
+        fig_uptime.update_layout(title="Product Uptime (Last 6 Months)", xaxis_title="Month", yaxis_title="Uptime %",
+                                yaxis=dict(range=yrange_uptime), margin=dict(l=6, r=6, t=36, b=10), height=340)
+        st.plotly_chart(fig_uptime, use_container_width=True)
+        chart_titles.append("Product Uptime (Last 6 Months)")
+
+
+
+    # ===== Assign Form (at bottom) =====
+    # ===== Assign Form (at bottom) =====
+    st.markdown("---")
+    st.subheader("📤 Assign action item")
+
+    with st.form("assign_dashboard_form", clear_on_submit=True):   # ✅ clears after submit
+        to = st.text_input("Assign to (email or name)")
+        due = st.date_input("Due Date", min_value=date.today())
+        chart_choice = st.selectbox("Select Chart/Gauge", chart_titles)
+        priority = st.selectbox("Priority", ["Low", "Medium", "High"], index=1)  # ✅ new
+        msg = st.text_area("Message", "Hi, Check this data and take necessary action.")
+        submitted = st.form_submit_button("✅ Confirm Assign")
+
+        if submitted:
+            action = {
+                "id": str(uuid.uuid4())[:6],
+                "to": to,
+                "due": str(due),
+                "priority": priority,   # ✅ added
+                "msg": msg,
+                "answer": f"Review Dashboard KPI: {chart_choice}",
+                "chart_title": chart_choice,
+                "status": "Pending"
+            }
+            st.session_state.actions.append(action)
+            st.success(f"✅ Assigned: {chart_choice}")
+            st.rerun()   # ✅ refresh to clear
+
+
 
 # ------------------------
 # Action Item Tracker (unchanged)
@@ -635,9 +1003,9 @@ elif page == "🔔 Smart Alerts":
     else:
         for i, alert in enumerate(st.session_state.alerts):
             with st.expander(f"🔔 {alert['query']}"):
-                st.write(f"*Query:* {alert['query']}")
-                st.write(f"*Recipients:* {', '.join(alert.get('emails', []))}")
-                st.write(f"*Message:* {alert.get('message', '')}")
+                st.write(f"Query: {alert['query']}")
+                st.write(f"Recipients: {', '.join(alert.get('emails', []))}")
+                st.write(f"Message: {alert.get('message', '')}")
 
                 cols = st.columns([1,1,1])
                 if cols[0].button("▶ Test Now", key=f"test_{i}"):
