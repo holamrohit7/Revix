@@ -27,222 +27,52 @@ import time
 #     ["📊 KPI Dashboard", "💬 Chat", "✅ Action Item Tracker", "🔔 Smart Alerts"]
 # )
 
-# ------------------------
+------------------------
 # Sidebar with Logo at Top (no extra space above)
-# ------------------------
-# st.markdown(
-#     """
-#     <style>
-#     /* remove the default top padding/space in sidebar */
-#     section[data-testid="stSidebar"] > div:first-child {
-#         padding-top: 0rem;
-#     }
-#     .logo-card {
-#         text-align: center;
-#         padding: 10px 5px 20px 5px;
-#     }
-#     .logo-title {
-#         font-size: 16px;
-#         font-weight: 800;
-#         color: #FFFFFF;
-#         margin-top: 8px;
-#         margin-bottom: 2px;
-#     }
-#     .logo-sub {
-#         font-size: 14px;
-#         font-weight: 400;
-#         color: #AFC6D9;
-#         margin: 0;
-#     }
-#     .nav-section h3 {
-#         font-size: 15px;
-#         margin-bottom: 6px;
-#         color: #FFFFFF;
-#     }
-#     </style>
-#     """,
-#     unsafe_allow_html=True,
-# )
-
-# with st.sidebar:
-#     # --- Logo card ---
-#     st.markdown('<div class="logo-card">', unsafe_allow_html=True)
-#     st.image("Images/logo.jpg", use_container_width=True)  # 👈 adjust width if needed
-#     st.markdown("<div class='logo-title'>Revolutionize Data & Execute Precisely</div>", unsafe_allow_html=True)
-#     st.markdown("<div class='logo-sub'>AI-Powered Analytics</div>", unsafe_allow_html=True)
-#     st.markdown('</div>', unsafe_allow_html=True)
-
-#     # --- Navigation ---
-#     st.markdown('<div class="nav-section">', unsafe_allow_html=True)
-#     st.markdown("### ⚙ Navigation", unsafe_allow_html=True)
-#     page = st.radio(
-#         "",
-#         ["📊 KPI Dashboard", "💬 Chat", "✅ Action Item Tracker", "🔔 Smart Alerts"],
-#         index=0,
-#         key="main_nav",
-#     )
-#     st.markdown('</div>', unsafe_allow_html=True)
-
-
-# # --- Account section (clean, no avatar) ---
-# st.markdown(
-#     """
-#     <style>
-
-#     .account-card {
-#         margin-top: auto;
-#         background: linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.01));
-#         border-radius: 12px;
-#         padding: 14px 16px;
-#         margin: 12px 8px 0px 8px;   /* 👈 set bottom margin = 0 */
-#         color: #E6EEF3;
-#         box-shadow: 0 2px 8px rgba(2,6,18,0.6);
-#     }
-        
-#     .acct-name {
-#         font-size:15px;
-#         font-weight:700;
-#         margin:0 0 4px 0;
-#         color:#ffffff;
-#     }
-#     .acct-email {
-#         font-size:13px;
-#         color:#9fb2c8;
-#         margin:0;
-#     }
-#     .acct-role {
-#         font-size:12px;
-#         color:#9fb2c8;
-#         margin:4px 0 10px 0;
-#     }
-#     .acct-actions {
-#         display:flex;
-#         gap:10px;
-#     }
-#     .acct-btn {
-#         background:#1a2538;
-#         border:1px solid rgba(255,255,255,0.08);
-#         color:#cfe6ff;
-#         padding:6px 12px;
-#         border-radius:8px;
-#         font-size:12px;
-#         cursor:pointer;
-#         transition: all 0.2s ease;
-#     }
-#     .acct-btn:hover {
-#         background:#22314a;
-#         border-color: rgba(255,255,255,0.2);
-#     }
-#     </style>
-#     """,
-#     unsafe_allow_html=True,
-# )
-
-# with st.sidebar:
-#     st.markdown(
-#         """
-#         <div class="account-card">
-#             <p class="acct-name">John Cena</p>
-#             <p class="acct-email">John@revix.com</p>
-#             <p class="acct-role">VP Sales</p>
-#             <div class="acct-actions">
-#                 <button class="acct-btn">Manage</button>
-#                 <button class="acct-btn">Sign out</button>
-#             </div>
-#         </div>
-#         """,
-#         unsafe_allow_html=True,
-#     )
-# ------------------------
-# Sidebar (fixed-fit, no full-sidebar scrollbar)
-# Replace your existing sidebar block with this.
-# ------------------------
+------------------------
 st.markdown(
     """
     <style>
-    /* make outer sidebar a full height flex column */
+    /* remove the default top padding/space in sidebar */
     section[data-testid="stSidebar"] > div:first-child {
-        height: 100vh;
-        display: flex;
-        flex-direction: column;
-        padding-top: 0rem;  /* logo flush to top */
+        padding-top: 0rem;
     }
-
-    /* compact logo area (fixed height) */
     .logo-card {
-        flex: 0 0 auto;
         text-align: center;
-        padding: 8px 6px;
-        margin: 0 6px 6px 6px;
-        background: transparent;
-    }
-    .logo-card img {
-        max-width: 160px;
-        max-height: 60px;
-        object-fit: contain;
-        display: block;
-        margin-left: auto;
-        margin-right: auto;
+        padding: 10px 5px 20px 5px;
     }
     .logo-title {
-        font-size: 14px;
-        font-weight: 700;
+        font-size: 16px;
+        font-weight: 800;
         color: #FFFFFF;
-        margin-top: 6px;
+        margin-top: 8px;
+        margin-bottom: 2px;
     }
     .logo-sub {
-        font-size: 12px;
+        font-size: 14px;
+        font-weight: 400;
         color: #AFC6D9;
         margin: 0;
     }
-
-    /* nav becomes flexible and scrolls internally if needed */
-    .nav-section {
-        flex: 1 1 auto;
-        overflow: auto;
-        padding: 6px;
-        margin: 0 6px;
+    .nav-section h3 {
+        font-size: 15px;
+        margin-bottom: 6px;
+        color: #FFFFFF;
     }
-    /* hide visual scrollbars (keeps scrolling functional) */
-    .nav-section::-webkit-scrollbar { width: 0; height: 0; }
-    .nav-section { -ms-overflow-style: none; scrollbar-width: none; }
-
-    .nav-section h3 { font-size: 14px; color: #FFFFFF; margin-bottom: 6px; }
-
-    /* account card pinned to bottom with no bottom gap */
-    .account-card {
-        flex: 0 0 auto;
-        margin: 0 8px 0 8px;   /* bottom = 0 -> flush */
-        background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
-        border-radius: 10px;
-        padding: 12px;
-        color: #E6EEF3;
-        box-shadow: 0 2px 8px rgba(2,6,18,0.6);
-    }
-    .acct-name { font-size:15px; font-weight:700; margin:0 0 4px 0; color:#ffffff; }
-    .acct-email { font-size:13px; color:#9fb2c8; margin:0; }
-    .acct-role { font-size:12px; color:#9fb2c8; margin:6px 0 8px 0; }
-    .acct-actions { display:flex; gap:8px; }
-    .acct-btn {
-        background:#1a2538; border:1px solid rgba(255,255,255,0.06);
-        color:#cfe6ff; padding:6px 10px; border-radius:8px; font-size:12px;
-    }
-    .acct-btn:hover { background:#22314a; }
     </style>
     """,
     unsafe_allow_html=True,
 )
 
 with st.sidebar:
-    # --- Logo card (fixed size; adjust width if you need) ---
+    # --- Logo card ---
     st.markdown('<div class="logo-card">', unsafe_allow_html=True)
-    # use width param to control displayed size (keeps aspect ratio)
-    st.image("Images/logo.jpg", width=160)
+    st.image("Images/logo.jpg", use_container_width=True)  # 👈 adjust width if needed
     st.markdown("<div class='logo-title'>Revolutionize Data & Execute Precisely</div>", unsafe_allow_html=True)
     st.markdown("<div class='logo-sub'>AI-Powered Analytics</div>", unsafe_allow_html=True)
     st.markdown('</div>', unsafe_allow_html=True)
 
-    # --- Navigation (flexible area) ---
+    # --- Navigation ---
     st.markdown('<div class="nav-section">', unsafe_allow_html=True)
     st.markdown("### ⚙ Navigation", unsafe_allow_html=True)
     page = st.radio(
@@ -253,7 +83,62 @@ with st.sidebar:
     )
     st.markdown('</div>', unsafe_allow_html=True)
 
-    # --- Account card pinned to bottom (flush) ---
+
+# --- Account section (clean, no avatar) ---
+st.markdown(
+    """
+    <style>
+
+    .account-card {
+        margin-top: auto;
+        background: linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.01));
+        border-radius: 12px;
+        padding: 14px 16px;
+        margin: 12px 8px 0px 8px;   /* 👈 set bottom margin = 0 */
+        color: #E6EEF3;
+        box-shadow: 0 2px 8px rgba(2,6,18,0.6);
+    }
+        
+    .acct-name {
+        font-size:15px;
+        font-weight:700;
+        margin:0 0 4px 0;
+        color:#ffffff;
+    }
+    .acct-email {
+        font-size:13px;
+        color:#9fb2c8;
+        margin:0;
+    }
+    .acct-role {
+        font-size:12px;
+        color:#9fb2c8;
+        margin:4px 0 10px 0;
+    }
+    .acct-actions {
+        display:flex;
+        gap:10px;
+    }
+    .acct-btn {
+        background:#1a2538;
+        border:1px solid rgba(255,255,255,0.08);
+        color:#cfe6ff;
+        padding:6px 12px;
+        border-radius:8px;
+        font-size:12px;
+        cursor:pointer;
+        transition: all 0.2s ease;
+    }
+    .acct-btn:hover {
+        background:#22314a;
+        border-color: rgba(255,255,255,0.2);
+    }
+    </style>
+    """,
+    unsafe_allow_html=True,
+)
+
+with st.sidebar:
     st.markdown(
         """
         <div class="account-card">
