@@ -349,8 +349,8 @@ def demo_customer_health_report_text():
 if page == "💬 Chat":
     st.title("🤖 Agent Revix (Chat Mode)")
 
-    show_charts = st.sidebar.checkbox("📊 Show Charts Automatically", value=True)
-
+    # show_charts = st.sidebar.checkbox("📊 Show Charts Automatically", value=True)
+    show_charts = True
     # Render past messages
     for msg in st.session_state.messages:
         if msg["role"] == "user":
