@@ -344,7 +344,7 @@ def demo_customer_health_report_text():
 # Chat Page (modified to use scripted responses for demo prompts)
 # ------------------------
 if page == "💬 Chat":
-    st.title("🤖 Agent Revix (Chat Mode)")
+    st.title("🤖 Chat with Revix AI")
 
     # show_charts = st.sidebar.checkbox("📊 Show Charts Automatically", value=True)
     show_charts = True
