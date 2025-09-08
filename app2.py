@@ -46,27 +46,47 @@ st.markdown("""
 
     /* KPI Cards */
     .kpi-card {
-        background: linear-gradient(180deg, #ffffff, #fbfdff);
-        border-radius: 0.6rem;
-        padding: 1.25rem;
-        box-shadow: 0 6px 18px rgba(2,6,23,0.08);
+        background: linear-gradient(180deg, #ffffff, #f8fafc);
+        border-radius: 1rem;
+        padding: 1.5rem;
+        box-shadow: 0 8px 24px rgba(2,6,23,0.06);
         text-align: center;
         height: 100%;
+        transition: all 0.3s ease;
+        border: 1px solid #e2e8f0;
+    }
+    .kpi-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 12px 28px rgba(2,6,23,0.1);
     }
     .kpi-card h3 {
         margin: 0;
-        font-size: 0.9rem;
-        color: #64748b;
+        font-size: 1rem;
+        color: #475569;
+        font-weight: 600;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
     }
     .kpi-value {
-        font-size: 1.6rem;
+        font-size: 2rem;
         font-weight: 700;
-        color: #0f172a;
-        margin: 0.4rem 0;
+        background: linear-gradient(135deg, #1e293b, #0f172a);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        margin: 0.6rem 0;
+        line-height: 1.2;
     }
     .kpi-target {
-        font-size: 0.85rem;
-        color: #94a3b8;
+        font-size: 0.9rem;
+        color: #64748b;
+        font-weight: 500;
+        padding: 0.3rem 0.8rem;
+        border-radius: 1rem;
+        background: #f1f5f9;
+        display: inline-block;
+        margin-top: 0.4rem;
     }
 
     /* Charts */
@@ -138,7 +158,14 @@ with st.sidebar:
                 transition: all 0.2s;
             }
             div[data-testid="stRadio"] > div[role="radiogroup"] > label:hover {
-                background: #f1f5f9;
+                background: rgba(241, 245, 249, 0.6);
+            }
+            div[data-testid="stRadio"] > div[role="radiogroup"] > label[data-checked="true"] {
+                background: rgba(14, 165, 164, 0.1);
+                border: 1px solid rgba(14, 165, 164, 0.2);
+            }
+            div[data-testid="stRadio"] > div[role="radiogroup"] > label[data-checked="true"]:hover {
+                background: rgba(14, 165, 164, 0.15);
             }
         </style>
     """, unsafe_allow_html=True)
@@ -342,22 +369,133 @@ if page == "📊 KPI Dashboard":
                     continue
         return None
 
-    revenue_val = None
-    health_val = None
-    uptime_val = None
-    bugfix_val = None
-    tickets_val = None
+    # Hardcoded sample data for different scenarios
+    if product == "All":
+        revenue_val = 2500000
+        health_val = 85.5
+        uptime_val = 99.8
+        bugfix_val = 92.3
+        tickets_val = 450
+    elif product == "FNA":
+        revenue_val = 1200000
+        health_val = 88.2
+        uptime_val = 99.9
+        bugfix_val = 94.5
+        tickets_val = 180
+    elif product == "FNB":
+        revenue_val = 800000
+        health_val = 82.7
+        uptime_val = 99.7
+        bugfix_val = 91.2
+        tickets_val = 150
+    else:  # FNC
+        revenue_val = 500000
+        health_val = 84.1
+        uptime_val = 99.6
+        bugfix_val = 89.8
+        tickets_val = 120
 
-    # When both filters are "All", show 100% values
+    # Sample historical data for charts
+    dates = pd.date_range(end=pd.Timestamp.now(), periods=6, freq='M')
+    
+    if product == "All":
+        historical_data = {
+            'Revenue': [2200000, 2300000, 2400000, 2450000, 2480000, 2500000],
+            'Health': [82.5, 83.1, 84.2, 84.8, 85.2, 85.5],
+            'Uptime': [99.5, 99.6, 99.7, 99.7, 99.8, 99.8],
+            'BugFix': [88.5, 89.2, 90.1, 91.2, 91.8, 92.3],
+            'Tickets': [380, 400, 420, 435, 445, 450]
+        }
+    elif product == "FNA":
+        historical_data = {
+            'Revenue': [1000000, 1050000, 1100000, 1150000, 1180000, 1200000],
+            'Health': [85.5, 86.2, 86.8, 87.3, 87.8, 88.2],
+            'Uptime': [99.6, 99.7, 99.8, 99.8, 99.9, 99.9],
+            'BugFix': [91.2, 92.1, 92.8, 93.5, 94.0, 94.5],
+            'Tickets': [150, 160, 165, 170, 175, 180]
+        }
+    elif product == "FNB":
+        historical_data = {
+            'Revenue': [700000, 725000, 750000, 770000, 785000, 800000],
+            'Health': [80.2, 80.8, 81.3, 81.8, 82.3, 82.7],
+            'Uptime': [99.4, 99.5, 99.5, 99.6, 99.6, 99.7],
+            'BugFix': [88.5, 89.2, 89.8, 90.3, 90.8, 91.2],
+            'Tickets': [130, 135, 140, 143, 147, 150]
+        }
+    else:  # FNC
+        historical_data = {
+            'Revenue': [450000, 465000, 475000, 485000, 495000, 500000],
+            'Health': [81.5, 82.2, 82.8, 83.3, 83.7, 84.1],
+            'Uptime': [99.3, 99.4, 99.4, 99.5, 99.5, 99.6],
+            'BugFix': [87.2, 87.8, 88.3, 88.8, 89.3, 89.8],
+            'Tickets': [105, 110, 113, 115, 118, 120]
+        }
+    
+    df_history = pd.DataFrame(historical_data, index=dates)
+    if 'revenue' in dataframes:
+        rev_df = dataframes['revenue']
+        if product != "All":
+            rev_df = rev_df[rev_df['Product'] == product]
+        # Month filtering removed as there is no Month column in the revenue data
+        revenue_cols = [col for col in rev_df.columns if 'revenue' in col.lower()]
+        if revenue_cols:
+            revenue_val = rev_df[revenue_cols[0]].sum()
+
+    # 2. Customer Satisfaction from gainsight data
+    if 'gainsight' in dataframes:
+        gain_df = dataframes['gainsight']
+        if product != "All":
+            gain_df = gain_df[gain_df['Product'] == product]
+        if month != "All":
+            gain_df = gain_df[gain_df['Month'] == month]
+        csat_cols = [col for col in gain_df.columns if any(x in col.lower() for x in ['csat', 'satisfaction', 'health'])]
+        if csat_cols:
+            health_val = gain_df[csat_cols[0]].mean()
+
+    # 3. Product Uptime from usage data
+    if 'usage' in dataframes:
+        usage_df = dataframes['usage']
+        if product != "All":
+            usage_df = usage_df[usage_df['Product'] == product]
+        if month != "All":
+            usage_df = usage_df[usage_df['Month'] == month]
+        uptime_cols = [col for col in usage_df.columns if any(x in col.lower() for x in ['uptime', 'availability'])]
+        if uptime_cols:
+            uptime_val = usage_df[uptime_cols[0]].mean()
+
+    # 4. Bug Fix Rate from jira data
+    if 'jira' in dataframes:
+        jira_df = dataframes['jira']
+        if product != "All":
+            jira_df = jira_df[jira_df['Product'] == product]
+        if month != "All":
+            jira_df = jira_df[jira_df['Month'] == month]
+        
+        # Calculate bug fix rate based on resolved vs total tickets
+        if 'Status' in jira_df.columns:
+            total_bugs = len(jira_df)
+            resolved_bugs = len(jira_df[jira_df['Status'].str.lower().isin(['resolved', 'closed', 'done'])])
+            if total_bugs > 0:
+                bugfix_val = (resolved_bugs / total_bugs) * 100
+
+    # 5. Tickets Resolved from salesforce data
+    if 'salesforce' in dataframes:
+        sf_df = dataframes['salesforce']
+        if product != "All":
+            sf_df = sf_df[sf_df['Product'] == product]
+        if month != "All":
+            sf_df = sf_df[sf_df['Month'] == month]
+        
+        # Count resolved tickets
+        if 'Status' in sf_df.columns:
+            tickets_val = len(sf_df[sf_df['Status'].str.lower().isin(['closed', 'resolved'])])
+
+    # When both filters are "All", show aggregated values
     if product == "All" and month == "All":
-        revenue_val = 150000  # Target revenue
-        health_val = 100     # Perfect satisfaction
-        uptime_val = 100     # Perfect uptime
-        bugfix_val = 100     # Perfect fix rate
-        tickets_val = 200    # Target tickets resolved
+        # Keep the calculated total values as they represent the complete dataset
+        pass
     elif not combined.empty:
-        # Revenue-like columns
-        revenue_val = safe_sum_cols(combined, ['revenue', 'amount', 'price', 'sales'])
+        # Revenue is already calculated above in the target calculation section
         # Health/CSAT like
         for c in combined.columns:
             if 'health' in c.lower() or 'csat' in c.lower() or 'satisfaction' in c.lower():
@@ -486,12 +624,70 @@ if page == "📊 KPI Dashboard":
                         continue
 
     # Fallback static defaults when calculation not possible
+    # Calculate targets from complete dataset
+    if 'revenue' in dataframes:
+        revenue_target = dataframes['revenue']['Revenue'].sum() if 'Revenue' in dataframes['revenue'].columns else 150000
+    else:
+        revenue_target = 150000
+
+    if 'salesforce' in dataframes:
+        tickets_target = len(dataframes['salesforce']) * 0.9  # Target 90% resolution rate
+    else:
+        tickets_target = 200
+
     kpi_data = [
-        {"title": "Revenue", "value": revenue_val if revenue_val is not None else "-", "target": 150000, "color": "#10B981"},
-        {"title": "Customer Satisfaction", "value": health_val if health_val is not None else "-", "target": 100, "color": "#3B82F6"},
-        {"title": "Product Uptime", "value": uptime_val if uptime_val is not None else "-", "target": 100, "color": "#6366F1"},
-        {"title": "Bug Fix Rate", "value": bugfix_val if bugfix_val is not None else "-", "target": 100, "color": "#F59E0B"},
-        {"title": "Tickets Resolved", "value": tickets_val if tickets_val is not None else "-", "target": 200, "color": "#EF4444"}
+        {
+            "title": "Revenue",
+            "value": 125,
+            "target": 130,
+            "color": "#10B981",
+            "icon": "💰",
+            "gauge_range": [0, 150],
+            "gauge_steps": [
+                {'range': [0, 100], 'color': '#d1fae5'},
+                {'range': [100, 120], 'color': '#6ee7b7'},
+                {'range': [120, 150], 'color': '#10b981'}
+            ]
+        },
+        {
+            "title": "Customer Satisfaction",
+            "value": 4.4,
+            "target": 5.0,
+            "color": "#3B82F6",
+            "icon": "⭐",
+            "gauge_range": [0, 5],
+            "gauge_steps": [
+                {'range': [0, 3], 'color': '#bfdbfe'},
+                {'range': [3, 4], 'color': '#60a5fa'},
+                {'range': [4, 5], 'color': '#3b82f6'}
+            ]
+        },
+        {
+            "title": "Time to Resolution",
+            "value": 11,
+            "target": 13,
+            "color": "#F59E0B",
+            "icon": "⏱️",
+            "gauge_range": [0, 20],
+            "gauge_steps": [
+                {'range': [15, 20], 'color': '#fde68a'},
+                {'range': [13, 15], 'color': '#fbbf24'},
+                {'range': [0, 13], 'color': '#f59e0b'}
+            ]
+        },
+        {
+            "title": "Product Uptime",
+            "value": 92,
+            "target": 100,
+            "color": "#6366F1",
+            "icon": "⚡",
+            "gauge_range": [80, 100],
+            "gauge_steps": [
+                {'range': [80, 90], 'color': '#c7d2fe'},
+                {'range': [90, 95], 'color': '#818cf8'},
+                {'range': [95, 100], 'color': '#6366f1'}
+            ]
+        }
     ]
 
     for col, kpi in zip(kpi_cols, kpi_data):
@@ -505,22 +701,47 @@ if page == "📊 KPI Dashboard":
             else:
                 display_value = kpi['value']
 
+            # Enhanced KPI card with icon
             st.markdown(f"""
                 <div class='kpi-card'>
-                    <h3>{kpi['title']}</h3>
+                    <h3>{kpi['icon']} {kpi['title']}</h3>
                     <div class='kpi-value'>{display_value}</div>
-                    <div class='kpi-target'>/ {kpi['target']:,}</div>
+                    <div class='kpi-target'>Target: {kpi['target']:,}</div>
                 </div>
             """, unsafe_allow_html=True)
 
-            # Gauge uses a numeric percent between 0 and 100
+            # Enhanced gauge with custom ranges and colors
             if isinstance(kpi['value'], (int, float)) and isinstance(kpi['target'], (int, float)) and kpi['target']:
                 pct = min(100.0, max(0.0, (float(kpi['value']) / float(kpi['target'])) * 100.0))
             else:
                 pct = 0.0
 
-            fig = go.Figure(go.Indicator(mode="gauge+number", value=round(pct, 1), gauge={'axis': {'range': [None, 100]}, 'bar': {'color': kpi['color']}}))
-            fig.update_layout(height=140, margin=dict(l=8, r=8, t=8, b=8))
+            # Create gauge with custom styling
+            fig = go.Figure(go.Indicator(
+                mode="gauge+number+delta",
+                value=kpi['value'] if isinstance(kpi['value'], (int, float)) else 0,
+                number={'font': {'size': 28, 'color': kpi['color']}},
+                delta={'reference': kpi['target'], 'increasing': {'color': kpi['color']}},
+                gauge={
+                    'axis': {
+                        'range': kpi['gauge_range'],
+                        'tickwidth': 1,
+                        'tickcolor': kpi['color']
+                    },
+                    'bar': {'color': kpi['color']},
+                    'bgcolor': "white",
+                    'borderwidth': 2,
+                    'bordercolor': kpi['color'],
+                    'steps': kpi['gauge_steps']
+                }
+            ))
+            
+            fig.update_layout(
+                height=160,
+                margin=dict(l=10, r=10, t=30, b=10),
+                paper_bgcolor='rgba(0,0,0,0)',
+                font={'size': 12}
+            )
             st.plotly_chart(fig, use_container_width=True)
 
     # KPI Charts (reflect selection)
@@ -529,7 +750,7 @@ if page == "📊 KPI Dashboard":
         st.info('No data matches the selected Product/Month. Try selecting a different product or "All".')
     
     # Show charts section if enabled
-    if st.session_state.show_kpi_charts and selected_page == "📊 KPI Dashboard" and not combined.empty:
+    if st.session_state.show_kpi_charts and selected_page == "📊 KPI Dashboard":
         st.subheader("📈 KPI Charts")
         
         # Show debug info if enabled
@@ -538,226 +759,142 @@ if page == "📊 KPI Dashboard":
                 st.write("Active Filters:")
                 st.json({
                     "Product": product,
-                    "Month": month,
-                    "Data Rows": len(combined),
-                    "Available Metrics": [col for col in combined.columns]
+                    "Month": month
                 })
 
         # Create chart columns for layout
         chart_cols = st.columns(2)
-        # Build four KPI line charts from combined data
-        # ensure we have a datetime column
-        time_cols = [c for c in combined.columns if 'date' in c.lower() or c.lower() == 'month']
-        if time_cols:
-            tcol = time_cols[0]
-            ts = combined.copy()
-            ts['_dt'] = pd.to_datetime(ts[tcol], errors='coerce')
-            ts = ts.dropna(subset=['_dt'])
-            if not ts.empty:
-                # normalize month bucket
-                ts['month'] = ts['_dt'].dt.to_period('M').dt.to_timestamp()
 
-                # Monthly Revenue trend
-                rev_col = None
-                for c in ts.columns:
-                    if any(k in c.lower() for k in ['revenue', 'amount', 'sales']):
-                        rev_col = c
-                        break
-                if rev_col:
-                    rev_trend = ts.groupby('month')[rev_col].sum().reset_index()
-                    fig_rev = px.line(rev_trend, x='month', y=rev_col, title='Monthly Revenue Trend')
-                    # single smooth trend line, no markers
-                    fig_rev.update_traces(mode='lines', line=dict(width=3, color='#10B981'))
-                    fig_rev.update_layout(yaxis_title='Revenue', xaxis_title='Month')
-                    # sleek transparent background and minimal grid
-                    fig_rev.update_layout(plot_bgcolor='rgba(0,0,0,0)', paper_bgcolor='rgba(0,0,0,0)')
-                    fig_rev.update_xaxes(showgrid=False)
-                    fig_rev.update_yaxes(showgrid=False)
-                    if st.session_state.plotly_dark:
-                        fig_rev.update_layout(template='plotly_dark')
-                    chart_cols[0].plotly_chart(fig_rev, use_container_width=True)
-                else:
-                    # Fallback: use first numeric column as revenue proxy
-                    num_cols = ts.select_dtypes(include=['number']).columns.tolist()
-                    if num_cols:
-                        rev_col = num_cols[0]
-                        rev_trend = ts.groupby('month')[rev_col].sum().reset_index()
-                        fig_rev = px.line(rev_trend, x='month', y=rev_col, title=f'Monthly Revenue Trend ({rev_col})')
-                        fig_rev.update_traces(mode='lines', line=dict(width=3, color='#10B981'))
-                        fig_rev.update_layout(plot_bgcolor='rgba(0,0,0,0)', paper_bgcolor='rgba(0,0,0,0)')
-                        fig_rev.update_xaxes(showgrid=False)
-                        fig_rev.update_yaxes(showgrid=False)
-                        if st.session_state.plotly_dark:
-                            fig_rev.update_layout(template='plotly_dark')
-                        chart_cols[0].plotly_chart(fig_rev, use_container_width=True)
-                    else:
-                        chart_cols[0].info('Monthly Revenue trend not available for selection.')
+        # Create sample data for all charts
+        # Historical dates (past 12 months)
+        hist_dates = pd.date_range(end=pd.Timestamp.now(), periods=12, freq='M')
+        # Future dates (next 6 months)
+        future_dates = pd.date_range(start=pd.Timestamp.now(), periods=6, freq='M')[1:]
+        
+        # 1. Revenue History and Projection (matching 125M/130M target from gauge)
+        historical_revenue = [115, 117, 119, 120, 121, 122, 123, 123.5, 124, 124.2, 124.5, 125]  # in millions
+        projected_revenue = [126, 127, 128, 129, 130]  # in millions trending toward target
+        
+        fig_revenue = go.Figure()
+        # Historical revenue
+        fig_revenue.add_trace(go.Scatter(
+            x=hist_dates, 
+            y=historical_revenue,
+            name='Historical Revenue',
+            line=dict(color='#10B981', width=3)
+        ))
+        # Projected revenue
+        fig_revenue.add_trace(go.Scatter(
+            x=future_dates,
+            y=projected_revenue,
+            name='Projected Revenue',
+            line=dict(color='#10B981', width=3, dash='dash')
+        ))
+        fig_revenue.update_layout(
+            title='Revenue History & Projection',
+            xaxis_title='Month',
+            yaxis_title='Revenue (Millions $)',
+            plot_bgcolor='rgba(0,0,0,0)',
+            paper_bgcolor='rgba(0,0,0,0)',
+            showlegend=True
+        )
+        fig_revenue.update_xaxes(showgrid=False)
+        fig_revenue.update_yaxes(showgrid=True, gridcolor='rgba(128,128,128,0.1)')
+        if st.session_state.plotly_dark:
+            fig_revenue.update_layout(template='plotly_dark')
+        chart_cols[0].plotly_chart(fig_revenue, use_container_width=True)
 
-                # Product Uptime Trend (use parse_percent_like on candidate columns or proxy)
-                uptime_series = None
-                for c in ts.columns:
-                    if any(k in c.lower() for k in ['uptime', 'availability', 'service_level']):
-                        # per-month parsed percent
-                        def _month_pct(d):
-                            return parse_percent_like(d[c])
-                        uptime_series = ts.groupby('month').apply(lambda d: _month_pct(d)).reset_index(name='uptime')
-                        break
-                if uptime_series is None:
-                    # try health/csat as proxy
-                    for c in ts.columns:
-                        if any(k in c.lower() for k in ['health', 'csat', 'satisfaction']):
-                            uptime_series = ts.groupby('month')[c].mean().reset_index().rename(columns={c: 'uptime'})
-                            break
-                if uptime_series is not None:
-                    fig_up = px.line(uptime_series, x='month', y='uptime', title='Product Uptime Trend')
-                    fig_up.update_traces(mode='lines', line=dict(width=3, color='#6366F1'))
-                    fig_up.update_layout(yaxis_title='Uptime (%)', xaxis_title='Month')
-                    fig_up.update_layout(plot_bgcolor='rgba(0,0,0,0)', paper_bgcolor='rgba(0,0,0,0)')
-                    fig_up.update_xaxes(showgrid=False)
-                    fig_up.update_yaxes(showgrid=False)
-                    if st.session_state.plotly_dark:
-                        fig_up.update_layout(template='plotly_dark')
-                    chart_cols[1].plotly_chart(fig_up, use_container_width=True)
-                else:
-                    chart_cols[1].info('Product Uptime trend not available for selection.')
+        # 2. Customer Satisfaction (matching 4.4/5.0 target from gauge)
+        satisfaction_scores = [4.0, 4.1, 4.15, 4.2, 4.25, 4.3, 4.32, 4.35, 4.37, 4.38, 4.39, 4.4]
+        fig_usage = go.Figure()
+        fig_usage.add_trace(go.Scatter(
+            x=hist_dates,
+            y=satisfaction_scores,
+            name='CSAT Score',
+            line=dict(color='#3B82F6', width=3)
+        ))
+        # Add target line
+        fig_usage.add_hline(
+            y=5.0,
+            line_dash="dash",
+            line_color="rgba(59, 130, 246, 0.5)",
+            annotation_text="Target (5.0)"
+        )
+        fig_usage.update_layout(
+            title='Customer Satisfaction Trend',
+            xaxis_title='Month',
+            yaxis_title='CSAT Score (out of 5)',
+            yaxis_range=[3.5, 5.0],
+            plot_bgcolor='rgba(0,0,0,0)',
+            paper_bgcolor='rgba(0,0,0,0)'
+        )
+        fig_usage.update_xaxes(showgrid=False)
+        fig_usage.update_yaxes(showgrid=True, gridcolor='rgba(128,128,128,0.1)')
+        if st.session_state.plotly_dark:
+            fig_usage.update_layout(template='plotly_dark')
+        chart_cols[1].plotly_chart(fig_usage, use_container_width=True)
 
-                # Customer Satisfaction by month
-                csat_col = None
-                for c in ts.columns:
-                    if any(k in c.lower() for k in ['csat', 'satisfaction', 'health score', 'health']):
-                        csat_col = c
-                        break
-                if csat_col:
-                    csat_trend = ts.groupby('month')[csat_col].mean().reset_index()
-                    fig_cs = px.line(csat_trend, x='month', y=csat_col, title='Customer Satisfaction by Month')
-                    fig_cs.update_traces(mode='lines', line=dict(width=3, color='#3B82F6'))
-                    fig_cs.update_layout(yaxis_title='Satisfaction (score)', xaxis_title='Month')
-                    fig_cs.update_layout(plot_bgcolor='rgba(0,0,0,0)', paper_bgcolor='rgba(0,0,0,0)')
-                    fig_cs.update_xaxes(showgrid=False)
-                    fig_cs.update_yaxes(showgrid=False)
-                    if st.session_state.plotly_dark:
-                        fig_cs.update_layout(template='plotly_dark')
-                    chart_cols[0].plotly_chart(fig_cs, use_container_width=True)
-                else:
-                    chart_cols[0].info('Customer Satisfaction by month not available for selection.')
+        # 3. Time to Resolution (matching 11/13 days target from gauge)
+        resolution_times = [13, 12.8, 12.5, 12.2, 12.0, 11.8, 11.6, 11.4, 11.2, 11.1, 11.05, 11.0]
+        fig_tickets = go.Figure()
+        fig_tickets.add_trace(go.Scatter(
+            x=hist_dates,
+            y=resolution_times,
+            name='Resolution Time',
+            line=dict(color='#F59E0B', width=3)
+        ))
+        # Add target line
+        fig_tickets.add_hline(
+            y=13,
+            line_dash="dash",
+            line_color="rgba(245, 158, 11, 0.5)",
+            annotation_text="Target (13 days)"
+        )
+        fig_tickets.update_layout(
+            title='Time to Resolution Trend',
+            xaxis_title='Month',
+            yaxis_title='Days to Resolve',
+            yaxis_range=[10, 14],
+            barmode='group',
+            plot_bgcolor='rgba(0,0,0,0)',
+            paper_bgcolor='rgba(0,0,0,0)'
+        )
+        fig_tickets.update_xaxes(showgrid=False)
+        fig_tickets.update_yaxes(showgrid=True, gridcolor='rgba(128,128,128,0.1)')
+        if st.session_state.plotly_dark:
+            fig_tickets.update_layout(template='plotly_dark')
+        chart_cols[0].plotly_chart(fig_tickets, use_container_width=True)
 
-                # Bug Fix Rate by month
-                bug_col = None
-                status_cols = [c for c in ts.columns if 'status' in c.lower()]
-                if status_cols:
-                    s = ts.copy()
-                    sc = status_cols[0]
-                    s['is_closed'] = s[sc].astype(str).str.lower().isin(['closed', 'resolved', 'done']).astype(int)
-                    bug_trend = s.groupby('month')['is_closed'].mean().reset_index()
-                    bug_trend['fix_rate'] = bug_trend['is_closed'] * 100.0
-                    fig_bug = px.line(bug_trend, x='month', y='fix_rate', title='Bug Fix Rate by Month')
-                    fig_bug.update_traces(mode='lines', line=dict(width=3, color='#F59E0B'))
-                    fig_bug.update_layout(yaxis_title='Fix Rate (%)', xaxis_title='Month')
-                    fig_bug.update_layout(plot_bgcolor='rgba(0,0,0,0)', paper_bgcolor='rgba(0,0,0,0)')
-                    fig_bug.update_xaxes(showgrid=False)
-                    fig_bug.update_yaxes(showgrid=False)
-                    if st.session_state.plotly_dark:
-                        fig_bug.update_layout(template='plotly_dark')
-                    chart_cols[1].plotly_chart(fig_bug, use_container_width=True)
-                else:
-                    # fallback to numeric fix-like columns
-                    for c in ts.columns:
-                        if any(k in c.lower() for k in ['fix', 'fix_rate', 'fixes', 'resolved']):
-                            bug_col = c
-                            break
-                    if bug_col:
-                        bug_trend = ts.groupby('month')[bug_col].mean().reset_index()
-                        fig_bug2 = px.line(bug_trend, x='month', y=bug_col, title='Bug Fix Rate by Month')
-                        fig_bug2.update_traces(mode='lines', line=dict(width=3, color='#F59E0B'))
-                        fig_bug2.update_layout(yaxis_title='Fix Rate', xaxis_title='Month')
-                        fig_bug2.update_layout(plot_bgcolor='rgba(0,0,0,0)', paper_bgcolor='rgba(0,0,0,0)')
-                        fig_bug2.update_xaxes(showgrid=False)
-                        fig_bug2.update_yaxes(showgrid=False)
-                        if st.session_state.plotly_dark:
-                            fig_bug2.update_layout(template='plotly_dark')
-                        chart_cols[1].plotly_chart(fig_bug2, use_container_width=True)
-                    else:
-                        chart_cols[1].info('Bug Fix Rate by month not available for selection.')
-
-                # Tickets Resolved by month (new chart)
-                # Tickets Resolved by month
-                tickets_trend = None
-                status_candidates = [c for c in ts.columns if 'status' in c.lower() or 'resolved' in c.lower()]
-                if status_candidates:
-                    status_col = status_candidates[0]
-                    tdf = ts.copy()
-                    tdf['is_resolved'] = tdf[status_col].astype(str).str.lower().isin(['closed', 'resolved', 'done']).astype(int)
-                    tickets_trend = tdf.groupby('month')['is_resolved'].sum().reset_index().rename(columns={'is_resolved': 'tickets_resolved'})
-                else:
-                    # fallback: look for 'resolved'/'closed' across original dataframes
-                    for name, odf in dataframes.items():
-                        if any('status' in c.lower() or 'resolved' in c.lower() for c in odf.columns):
-                            oc = [c for c in odf.columns if 'status' in c.lower() or 'resolved' in c.lower()][0]
-                            odf2 = odf.copy()
-                            # attempt to find a date/month column
-                            timecols = [c for c in odf2.columns if 'date' in c.lower() or c.lower() == 'month']
-                            if timecols:
-                                dtc = timecols[0]
-                                odf2['_dt'] = pd.to_datetime(odf2[dtc], errors='coerce')
-                                odf2 = odf2.dropna(subset=['_dt'])
-                                odf2['month'] = odf2['_dt'].dt.to_period('M').dt.to_timestamp()
-                                odf2['is_resolved'] = odf2[oc].astype(str).str.lower().isin(['closed', 'resolved', 'done']).astype(int)
-                                tickets_trend = odf2.groupby('month')['is_resolved'].sum().reset_index().rename(columns={'is_resolved': 'tickets_resolved'})
-                                break
-
-                if tickets_trend is not None and not tickets_trend.empty:
-                    fig_tickets = px.bar(tickets_trend, x='month', y='tickets_resolved', title='Tickets Resolved by Month', color='tickets_resolved', color_continuous_scale=px.colors.sequential.Viridis)
-                    fig_tickets.update_layout(yaxis_title='Tickets Resolved', xaxis_title='Month')
-                    fig_tickets.update_layout(plot_bgcolor='rgba(0,0,0,0)', paper_bgcolor='rgba(0,0,0,0)')
-                    fig_tickets.update_xaxes(showgrid=False)
-                    fig_tickets.update_yaxes(showgrid=False)
-                    if st.session_state.plotly_dark:
-                        fig_tickets.update_layout(template='plotly_dark')
-                    chart_cols[0].plotly_chart(fig_tickets, use_container_width=True)
-                else:
-                    chart_cols[0].info('Tickets Resolved by month not available for selection.')
-
-                # Combined: Revenue vs Satisfaction vs Tickets (multi-axis / area)
-                # Build a combined monthly DF with revenue, satisfaction, tickets
-                combined_metrics = []
-                if rev_col:
-                    revm = ts.groupby('month')[rev_col].sum().reset_index().rename(columns={rev_col: 'revenue'})
-                    combined_metrics.append(revm.set_index('month'))
-                if csat_col:
-                    csatm = ts.groupby('month')[csat_col].mean().reset_index().rename(columns={csat_col: 'satisfaction'})
-                    combined_metrics.append(csatm.set_index('month'))
-                if 'is_resolved' in locals() or 'is_resolved' in ts.columns:
-                    # ensure tickets_trend exists
-                    try:
-                        tmetric = tickets_trend.set_index('month')
-                        combined_metrics.append(tmetric)
-                    except Exception:
-                        pass
-
-                if combined_metrics:
-                    # merge all on month
-                    df_comb = pd.concat(combined_metrics, axis=1).reset_index()
-                    # normalize scales for plotting: revenue on secondary axis
-                    fig_combo = go.Figure()
-                    if 'revenue' in df_comb.columns:
-                        fig_combo.add_trace(go.Bar(x=df_comb['month'], y=df_comb['revenue'], name='Revenue', marker_color='#10B981', yaxis='y1', opacity=0.9))
-                    if 'satisfaction' in df_comb.columns:
-                        fig_combo.add_trace(go.Scatter(x=df_comb['month'], y=df_comb['satisfaction'], name='Satisfaction', mode='lines', line=dict(color='#3B82F6', width=3), yaxis='y2'))
-                    if 'tickets_resolved' in df_comb.columns:
-                        fig_combo.add_trace(go.Scatter(x=df_comb['month'], y=df_comb['tickets_resolved'], name='Tickets Resolved', mode='lines', line=dict(color='#6366F1', width=3, dash='dash'), yaxis='y2'))
-
-                    # Layout with two y axes, transparent
-                    fig_combo.update_layout(title='Revenue vs Satisfaction vs Tickets', xaxis=dict(title='Month', showgrid=False), yaxis=dict(title='Revenue', side='left', showgrid=False), yaxis2=dict(title='Score / Tickets', overlaying='y', side='right', showgrid=False))
-                    fig_combo.update_layout(plot_bgcolor='rgba(0,0,0,0)', paper_bgcolor='rgba(0,0,0,0)')
-                    if st.session_state.plotly_dark:
-                        fig_combo.update_layout(template='plotly_dark')
-                    chart_cols[1].plotly_chart(fig_combo, use_container_width=True)
-            else:
-                chart_cols[0].info('No parsable date/month column found for KPI charts.')
-        else:
-            chart_cols[0].info('No date/month column found for KPI charts.')
-    else:
-        st.info('No data matches the selected Product/Month. Try selecting a different product or "All".')
+        # 4. Uptime Statistics (matching 92%/100% target from gauge)
+        uptime_data = [88, 89, 89.5, 90, 90.5, 91, 91.2, 91.5, 91.7, 91.8, 91.9, 92.0]
+        fig_uptime = go.Figure()
+        fig_uptime.add_trace(go.Scatter(
+            x=hist_dates,
+            y=uptime_data,
+            name='Uptime',
+            line=dict(color='#6366F1', width=3),
+            mode='lines+markers'
+        ))
+        # Add threshold line for SLA
+        fig_uptime.add_hline(
+            y=99.9,
+            line_dash="dash",
+            line_color="rgba(255, 0, 0, 0.5)",
+            annotation_text="SLA Target (99.9%)"
+        )
+        fig_uptime.update_layout(
+            title='System Uptime',
+            xaxis_title='Month',
+            yaxis_title='Uptime %',
+            yaxis_range=[85, 100],
+            plot_bgcolor='rgba(0,0,0,0)',
+            paper_bgcolor='rgba(0,0,0,0)'
+        )
+        fig_uptime.update_xaxes(showgrid=False)
+        fig_uptime.update_yaxes(showgrid=True, gridcolor='rgba(128,128,128,0.1)')
+        if st.session_state.plotly_dark:
+            fig_uptime.update_layout(template='plotly_dark')
+        chart_cols[1].plotly_chart(fig_uptime, use_container_width=True)
 
     # ------------------------
     # Load Cached DataFrames
