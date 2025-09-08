@@ -27,23 +27,7 @@ Works only with your Excel/CSV files.
 
 No outside-world knowledge.
 
-🛠️ Installation
-1. Clone repo
-git clone https://github.com/Harsh8793/Chat_with_excel_or_csv.git
 
-2. Create virtual environment
-python -m venv venv
-source venv/bin/activate   # Mac/Linux
-venv\Scripts\activate      # Windows
-
-3. Install dependencies
-pip install -r requirements.txt
-
-4. Environment variables
-
-Create a .env file:
-
-GROQ_API_KEY=your_groq_api_key_here
 
 🚀 Usage
 Step 1: Build embeddings (only once)
@@ -53,7 +37,7 @@ python build_embeddings.py
 This will load your Excel/CSV files, build cached DataFrames, and save dataframes.pkl.
 
 Step 2: Run chatbot
-streamlit run chatbot.py
+streamlit run app2.py
 
 Step 3: Ask questions
 
