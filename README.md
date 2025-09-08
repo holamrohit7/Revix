@@ -41,9 +41,9 @@ pip install -r requirements.txt
 
 4. Environment variables
 
-Create a .env file:
+Create a .env file with a GitHub token that has models:read:
 
-GROQ_API_KEY=your_groq_api_key_here
+GITHUB_TOKEN=ghp_your_token_here
 
 🚀 Usage
 Step 1: Build embeddings (only once)
