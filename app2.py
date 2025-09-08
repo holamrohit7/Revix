@@ -27,9 +27,7 @@ import time
 #     ["📊 KPI Dashboard", "💬 Chat", "✅ Action Item Tracker", "🔔 Smart Alerts"]
 # )
 
-------------------------
 # Sidebar with Logo at Top (no extra space above)
-------------------------
 st.markdown(
     """
     <style>
